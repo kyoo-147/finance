@@ -75,7 +75,7 @@ async function capture(name) {
 }
 async function navigate() {
   await cdp('Page.navigate', { url: `${base}/` });
-  await waitFor(`document.body && document.body.innerText.includes('Financial Position')`, 'overview');
+  await waitFor(`document.body && document.body.innerText.includes('Upload Reports')`, 'overview');
 }
 async function selectAccount(account) {
   await evaluate(`(()=>{const el=document.querySelector('select'); const setter=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el),'value').set; setter.call(el,${JSON.stringify(account)}); el.dispatchEvent(new Event('change',{bubbles:true})); return el.value})()`);

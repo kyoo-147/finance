@@ -15,6 +15,7 @@ import { useFinance } from '../context/FinanceContext';
 import { HeroBanner } from '../components/common/HeroBanner';
 import { DonutChart, DualBarLineChart } from '../components/common/Charts';
 import { formatMoney } from '../domain/formatters';
+import { QuickReportUpload } from '../components/common/QuickReportUpload';
 import {
   selectTotalBusinessIncome,
   selectBusinessExpenses,
@@ -26,6 +27,7 @@ import {
   selectLiquidAssets,
   selectTaxReserve,
   selectLatestTransactionMonth,
+  selectEmploymentIncome,
 } from '../domain/selectors';
 
 export const OverviewPage: React.FC = () => {
@@ -42,14 +44,22 @@ export const OverviewPage: React.FC = () => {
 
   const latestMonth = selectLatestTransactionMonth(transactions);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [incomeExpanded, setIncomeExpanded] = useState(false);
   const reportMonth = selectedMonth ?? latestMonth;
   const months = Array.from(new Set(transactions.map((t) => t.occurredAt.slice(0, 7)))).sort().reverse();
+  const reportTransactions = reportMonth ? transactions.filter((transaction) => transaction.occurredAt.startsWith(reportMonth)) : transactions;
   const totalIncome = selectTotalBusinessIncome(transactions, reportMonth);
+  const employmentIncome = selectEmploymentIncome(transactions, reportMonth);
+  const stripeIncome = selectTotalBusinessIncome(transactions.filter((transaction) => transaction.sourceAccountId === 'stripe'), reportMonth);
+  const affiliateIncome = reportTransactions.filter((transaction) => transaction.type === 'income' && transaction.categoryId === 'income-affiliate' && transaction.scope === 'business' && transaction.includedInProfit).reduce((sum, transaction) => sum + Math.abs(transaction.amountMinor), 0);
   const businessExpenses = selectBusinessExpenses(transactions, reportMonth);
   const netProfit = selectNetProfit(transactions, reportMonth);
   const taxBps = allocationRules.find((rule) => rule.name.toLowerCase().includes('tax'))?.percentageBps ?? 2500;
   const taxReserve = selectTaxReserve(transactions, taxBps, reportMonth);
-  const reviewCount = selectNeedsReviewCount(transactions);
+  const reviewCount = reportTransactions.filter((transaction) => transaction.reviewStatus === 'needs_review').length;
+  const matchedSettlements = reportTransactions.filter((transaction) => transaction.sourceAccountId === 'bank' && transaction.reconciliationStatus === 'matched').length;
+  const sourceSummary = ['stripe', 'bank', 'xero'].map((source) => ({ source, rows: reportTransactions.filter((transaction) => transaction.sourceAccountId === source && transaction.importJobId).length }));
+  const monthLabel = reportMonth ? new Date(`${reportMonth}-01T00:00:00`).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' }) : 'Current month';
 
   const netWorth = selectNetWorth(assets, liabilities);
   const portfolioValue = selectPortfolioValue(holdings);
@@ -58,7 +68,7 @@ export const OverviewPage: React.FC = () => {
   // mixed bank-statement movements.
   const currentCash = selectLiquidAssets(assets);
 
-  const reviewTxns = transactions.filter((t) => t.reviewStatus === 'needs_review').slice(0, 5);
+  const reviewTxns = reportTransactions.filter((t) => t.reviewStatus === 'needs_review').slice(0, 5);
 
   const calculatedAllocations = selectCalculatedAllocations(netProfit, allocationRules);
   const donutData = calculatedAllocations
@@ -86,8 +96,8 @@ export const OverviewPage: React.FC = () => {
     <div className="space-y-6">
       {/* Light & Refined Hero Header */}
       <HeroBanner
-        title="Financial Position"
-        subtitle="Based only on reports imported into this computer."
+        title={monthLabel}
+        subtitle="Monthly Finance — upload reports, review exceptions, and keep the dashboard current."
         compact
       >
         <div className="flex items-center gap-3 bg-slate-800/80 rounded-[12px] px-3.5 py-2 border border-slate-700/60 text-white">
@@ -105,24 +115,23 @@ export const OverviewPage: React.FC = () => {
         </div>
       </HeroBanner>
 
+      <QuickReportUpload />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{sourceSummary.map((item) => <div key={item.source} className="rounded-xl border border-slate-200 bg-white px-4 py-3"><div className="text-[11px] uppercase tracking-wide text-slate-400">{item.source === 'bank' ? 'ING' : item.source === 'xero' ? 'Xero' : 'Stripe'}</div><div className="mt-1 flex items-center gap-2 text-sm font-semibold">{item.rows > 0 ? <span className="text-emerald-600">✓</span> : <span className="text-slate-300">○</span>}{item.rows > 0 ? `${item.rows} ${item.source === 'stripe' ? 'payouts' : item.source === 'xero' ? 'payslip imported' : 'transactions'}` : 'Report not imported'}</div></div>)}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"><span className={matchedSettlements > 0 ? 'text-emerald-700 font-semibold' : 'text-slate-500'}>{matchedSettlements > 0 ? `✓ ${matchedSettlements} Stripe settlements matched` : '○ No Stripe settlement matches yet'}</span><span className={reviewCount > 0 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>{reviewCount > 0 ? `⚠ ${reviewCount} transactions need review` : '✓ Everything reviewed'}</span></div>
+
       {/* 4 Prioritized Core Financial Cards: Net Profit / Cash / Net Worth / Tax Reserve */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Net Profit */}
-        <div className="bg-white rounded-[14px] border border-slate-200/80 p-5 shadow-2xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-[12px] text-slate-500 font-medium">
-            <span>Net Profit</span>
-            <span className="text-[10px] text-emerald-600 bg-emerald-50 font-bold px-2 py-0.5 rounded-full">
-              Imported data
-            </span>
-          </div>
-          <div className="text-[24px] font-bold text-slate-900 tabular-nums mt-2">
-            {formatMoney(netProfit)}
-          </div>
-          <div className="text-[11px] text-slate-400 mt-1.5 flex items-center justify-between">
-            <span>In: {formatMoney(totalIncome)}</span>
-            <span>Out: {formatMoney(businessExpenses)}</span>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* 1. Business Income */}
+        <div className="bg-white rounded-[14px] border border-slate-200/80 p-5 shadow-2xs"><div className="flex items-center justify-between text-[12px] text-slate-500 font-medium"><span>Business Income</span><button onClick={() => setIncomeExpanded(!incomeExpanded)} className="text-[11px] text-slate-500 hover:underline">{incomeExpanded ? 'Hide' : 'Breakdown'}</button></div><div className="text-[24px] font-bold text-slate-900 tabular-nums mt-2">{formatMoney(totalIncome)}</div>{incomeExpanded && <div className="mt-2 space-y-1 text-[11px] text-slate-500"><div className="flex justify-between"><span>Stripe</span><span>{formatMoney(stripeIncome)}</span></div><div className="flex justify-between"><span>Affiliate Marketing</span><span>{formatMoney(affiliateIncome)}</span></div><div className="flex justify-between"><span>Other business income</span><span>{formatMoney(Math.max(0, totalIncome - affiliateIncome - stripeIncome))}</span></div></div>}</div>
+
+        {/* 2. Employment Income */}
+        <div className="bg-white rounded-[14px] border border-slate-200/80 p-5 shadow-2xs"><div className="text-[12px] text-slate-500 font-medium">Employment Income</div><div className="text-[24px] font-bold text-slate-900 tabular-nums mt-2">{formatMoney(employmentIncome)}</div><div className="text-[11px] text-slate-400 mt-1">Excluded from sole-trader profit</div></div>
+
+        {/* 3. Business Expenses */}
+        <div className="bg-white rounded-[14px] border border-slate-200/80 p-5 shadow-2xs"><div className="text-[12px] text-slate-500 font-medium">Business Expenses</div><div className="text-[24px] font-bold text-slate-900 tabular-nums mt-2">{formatMoney(businessExpenses)}</div><div className="text-[11px] text-slate-400 mt-1">Verified business costs</div></div>
+
+        {/* 4. Net Profit */}
+        <div className="bg-white rounded-[14px] border border-slate-200/80 p-5 shadow-2xs"><div className="flex items-center justify-between text-[12px] text-slate-500 font-medium"><span>Net Profit</span><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${reviewCount ? 'text-amber-700 bg-amber-50' : 'text-emerald-600 bg-emerald-50'}`}>{reviewCount ? 'Provisional' : 'Final for reviewed data'}</span></div><div className="text-[24px] font-bold text-slate-900 tabular-nums mt-2">{formatMoney(netProfit)}</div><div className="text-[11px] text-slate-400 mt-1.5">{reviewCount ? `${reviewCount} items still need review` : 'All monthly exceptions reviewed'}</div></div>
 
         {/* 2. Current Cash */}
         <div className="bg-white rounded-[14px] border border-slate-200/80 p-5 shadow-2xs hover:border-slate-300 transition-all">
@@ -220,6 +229,7 @@ export const OverviewPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/80">
+                {reviewTxns.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-sm text-emerald-700">✓ Everything reviewed for {monthLabel}</td></tr>}
                 {reviewTxns.map((txn) => {
                   const catName = categories.find((c) => c.id === txn.categoryId)?.name || 'Uncategorized';
                   return (

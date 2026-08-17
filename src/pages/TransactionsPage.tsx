@@ -16,6 +16,7 @@ import { formatMoney, formatDate } from '../domain/formatters';
 import { Transaction, TransactionScope, TransactionType } from '../types';
 import { selectCategoryBreakdown } from '../domain/selectors';
 import { ManualTransactionModal } from '../components/common/ManualTransactionModal';
+import { ExceptionReviewModal } from '../components/common/ExceptionReviewModal';
 
 export const TransactionsPage: React.FC = () => {
   const {
@@ -38,6 +39,7 @@ export const TransactionsPage: React.FC = () => {
   // Selection & Modal States
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null);
+  const [reviewingTxn, setReviewingTxn] = useState<Transaction | null>(null);
   const [ruleModalTxn, setRuleModalTxn] = useState<Transaction | null>(null);
   const [ruleKeyword, setRuleKeyword] = useState('');
   const [ruleCategory, setRuleCategory] = useState('');
@@ -90,6 +92,15 @@ export const TransactionsPage: React.FC = () => {
       action: { categoryId: ruleCategory, scope: ruleScope, includedInProfit: ruleScope === 'business' },
     });
     setRuleModalTxn(null);
+  };
+
+  const handleExceptionSave = async (patch: Partial<Transaction>, remember: boolean) => {
+    if (!reviewingTxn) return;
+    await updateTransaction(reviewingTxn.id, patch);
+    if (remember) {
+      await createCategoryRule({ priority: 50, enabled: true, conditions: [{ field: 'description', operator: 'contains', value: reviewingTxn.merchant || reviewingTxn.description.split(' ')[0] }], action: { categoryId: patch.categoryId || reviewingTxn.categoryId, scope: patch.scope || reviewingTxn.scope, includedInProfit: Boolean(patch.includedInProfit) } });
+    }
+    setReviewingTxn(null);
   };
 
   const exportToCsv = () => {
@@ -335,6 +346,7 @@ export const TransactionsPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                          {txn.reviewStatus === 'needs_review' && <button onClick={() => setReviewingTxn(txn)} className="rounded bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900 hover:bg-amber-200">Review</button>}
                           <button
                             onClick={() => openCreateRuleModal(txn)}
                             className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer"
@@ -407,6 +419,7 @@ export const TransactionsPage: React.FC = () => {
       {manualOpen && <ManualTransactionModal onClose={() => setManualOpen(false)} />}
 
       {/* Edit Modal */}
+      {reviewingTxn && <ExceptionReviewModal transaction={reviewingTxn} categories={categories} onSave={handleExceptionSave} onClose={() => setReviewingTxn(null)} />}
       {editingTxn && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
           <div className="bg-white rounded-[16px] border border-slate-200 p-6 max-w-md w-full shadow-xl space-y-4">

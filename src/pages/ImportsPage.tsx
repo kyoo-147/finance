@@ -17,10 +17,10 @@ import { formatDateTime, formatMoney } from '../domain/formatters';
 
 export const ImportsPage: React.FC = () => {
   const { importJobs, connectedAccounts, uploadImport, commitImport, revertImport, setActiveTab } = useFinance();
-  const [selectedAccount, setSelectedAccount] = useState('stripe');
+  const [selectedAccount, setSelectedAccount] = useState('auto');
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [previewJob, setPreviewJob] = useState<typeof importJobs[number] | null>(null);
+  const [previewJobs, setPreviewJobs] = useState<typeof importJobs[number][]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeJob = importJobs.find(
@@ -39,7 +39,7 @@ export const ImportsPage: React.FC = () => {
     const files = e.target.files;
     if (files && files.length > 0) {
       setUploadError(null);
-      try { const job = await uploadImport(files[0], selectedAccount); setPreviewJob(job); } catch (error) { setUploadError(error instanceof ApiError && error.status === 409 ? 'This file was already imported; no new transactions were created.' : error instanceof ApiError ? error.message : 'Unable to process this file. Check the CSV format and try again.'); }
+      try { const staged = []; for (const file of Array.from(files)) staged.push(await uploadImport(file, selectedAccount)); setPreviewJobs(staged); } catch (error) { setUploadError(error instanceof ApiError && error.status === 409 ? 'This file was already imported; no new transactions were created.' : error instanceof ApiError ? error.message : 'Unable to process this file. Check the CSV format and try again.'); }
       e.target.value = '';
     }
   };
@@ -102,12 +102,13 @@ export const ImportsPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-500 font-medium">Target Account:</span>
+              <span className="text-[11px] text-slate-500 font-medium">Source detection:</span>
               <select
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
                 className="bg-slate-50 border border-slate-200 rounded-lg text-[12px] font-semibold text-slate-800 px-2.5 py-1 outline-none"
               >
+                <option value="auto">Auto-detect each file</option>
                 {connectedAccounts.filter((a) => a.provider !== 'manual').map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.displayName}
@@ -122,7 +123,7 @@ export const ImportsPage: React.FC = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.pdf,application/pdf,text/csv"
+              accept=".csv,.pdf,application/pdf,text/csv" multiple
               onChange={handleFileUpload}
               className="hidden"
             />
@@ -299,7 +300,7 @@ export const ImportsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right space-x-2">
-                      {job.status === 'review_required' && <button onClick={() => setPreviewJob(job)} className="text-[11.5px] font-bold text-amber-700 hover:underline cursor-pointer">Preview & Confirm</button>}
+                      {job.status === 'review_required' && <button onClick={() => setPreviewJobs([job])} className="text-[11.5px] font-bold text-amber-700 hover:underline cursor-pointer">Preview & Confirm</button>}
                       {job.status === 'committed' && <button onClick={() => { if (window.confirm('Undo this import batch? Only transactions from this batch will be removed.')) void revertImport(job.id); }} className="text-[11.5px] font-bold text-rose-700 hover:underline cursor-pointer">Undo Import</button>}
                       {(job.status === 'committed' || job.status === 'reverted') && <button onClick={() => setActiveTab('transactions')} className="text-[11.5px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">View Ledger</button>}
                       {hasIssues && <button onClick={() => setActiveTab('transactions')} className="text-[11.5px] font-bold text-amber-700 hover:underline cursor-pointer">Review Items ({job.issuesCount}) →</button>}
@@ -311,13 +312,14 @@ export const ImportsPage: React.FC = () => {
           </table>
         </div>
       </div>
-      {previewJob && (
+      {previewJobs.length > 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
           <div className="bg-white rounded-[16px] border border-slate-200 p-6 max-w-xl w-full shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3"><h3 className="font-bold">Import Preview</h3><button onClick={() => setPreviewJob(null)} aria-label="Close preview">×</button></div>
-            <div className="grid grid-cols-2 gap-3 text-sm"><div><span className="text-slate-500">Source</span><div className="font-semibold">{connectedAccounts.find((a) => a.id === previewJob.sourceAccountId)?.displayName}</div></div><div><span className="text-slate-500">File</span><div className="font-semibold truncate">{previewJob.fileName}</div></div><div><span className="text-slate-500">Period</span><div className="font-semibold">{previewJob.periodStart ?? '—'} to {previewJob.periodEnd ?? '—'}</div></div><div><span className="text-slate-500">Rows detected</span><div className="font-semibold">{previewJob.rowCount ?? 0}</div></div><div><span className="text-slate-500">Accepted</span><div className="font-semibold text-emerald-700">{previewJob.acceptedRows ?? 0}</div></div><div><span className="text-slate-500">Duplicates / rejected</span><div className="font-semibold">{previewJob.duplicateRows ?? 0} / {previewJob.rejectedRows ?? 0}</div></div></div>
+            <div className="flex items-center justify-between border-b pb-3"><h3 className="font-bold">Import Preview</h3><button onClick={() => setPreviewJobs([])} aria-label="Close preview">×</button></div>
+            <div className="grid grid-cols-2 gap-3 text-sm"><div><span className="text-slate-500">Source</span><div className="font-semibold">{previewJobs.length === 1 ? connectedAccounts.find((a) => a.id === previewJobs[0].sourceAccountId)?.displayName : `${previewJobs.length} files`}</div></div><div><span className="text-slate-500">File</span><div className="font-semibold truncate">{previewJobs.map((job) => job.fileName).join(', ')}</div></div><div><span className="text-slate-500">Period</span><div className="font-semibold">{previewJobs.length === 1 ? `${previewJobs[0].periodStart ?? '—'} to ${previewJobs[0].periodEnd ?? '—'}` : 'See each staged file below'}</div></div><div><span className="text-slate-500">Rows detected</span><div className="font-semibold">{previewJobs.reduce((sum, job) => sum + (job.rowCount ?? 0), 0)}</div></div><div><span className="text-slate-500">Accepted</span><div className="font-semibold text-emerald-700">{previewJobs.reduce((sum, job) => sum + (job.acceptedRows ?? 0), 0)}</div></div><div><span className="text-slate-500">Duplicates / rejected</span><div className="font-semibold">{previewJobs.reduce((sum, job) => sum + (job.duplicateRows ?? 0), 0)} / {previewJobs.reduce((sum, job) => sum + (job.rejectedRows ?? 0), 0)}</div></div></div>
+            <div className="space-y-1 text-xs">{previewJobs.map((job) => <div key={job.id} className="flex justify-between rounded bg-slate-50 px-3 py-2"><span>{job.fileName}</span><span>{job.rowCount ?? 0} rows · {job.status}</span></div>)}</div>
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">Validation passed. No transactions have been committed yet.</div>
-            <div className="flex justify-end gap-2"><button onClick={() => setPreviewJob(null)} className="rounded-lg px-3 py-2 text-sm">Cancel</button><button onClick={async () => { try { await commitImport(previewJob.id); setPreviewJob(null); } catch {} }} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Confirm Import</button></div>
+            <div className="flex justify-end gap-2"><button onClick={() => setPreviewJobs([])} className="rounded-lg px-3 py-2 text-sm">Cancel</button><button onClick={async () => { try { await Promise.all(previewJobs.map((job) => commitImport(job.id))); setPreviewJobs([]); } catch {} }} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Confirm Import</button></div>
           </div>
         </div>
       )}

@@ -35,6 +35,12 @@ test('manual affiliate transaction is persisted, audited, and deletable', async 
   assert.equal(db.prepare('SELECT COUNT(*) count FROM transactions WHERE id=?').get(created.id).count, 0);
 }));
 
+test('auto-detect selects the correct source from report headers', async () => withDb(async (db) => {
+  const staged = await stageImport(db, { fileName: 'uploaded-report.csv', buffer: Buffer.from('Date,Description,Amount,Currency,Transaction ID\n2026-07-16,CLIENT PAYMENT,100.00,AUD,bank-auto\n') });
+  assert.equal(staged.sourceAccountId, 'bank');
+  assert.equal(staged.status, 'review_required');
+}));
+
 test('import preview commits only after confirmation, then can be reverted and re-imported', async () => withDb(async (db) => {
   const staged = await stageImport(db, { sourceAccountId: 'stripe', fileName: 'preview.csv', buffer: stripe() });
   assert.equal(staged.status, 'review_required'); assert.equal(db.prepare('SELECT COUNT(*) count FROM transactions').get().count, 0);

@@ -24,6 +24,23 @@ function ruleApplied(db, item) {
   return { ...item, categoryId: 'uncategorized', isBusiness: false, includeInProfit: false, reviewStatus: 'needs_review' };
 }
 
+async function detectSourceAccount(db, fileName, buffer) {
+  const lower = fileName.toLowerCase();
+  if (/stripe|payout/.test(lower)) return 'stripe';
+  if (/xero|payslip|pay-slip/.test(lower)) return 'xero';
+  if (/ing|orange|statement|everyday/.test(lower)) return 'bank';
+  if (buffer.subarray(0, 5).toString('ascii') !== '%PDF-') {
+    const header = new TextDecoder('utf-8', { fatal: false }).decode(buffer).slice(0, 1000).toLowerCase();
+    if (/payout_id|effective_at|reporting_category|balance_transaction_id/.test(header)) return 'stripe';
+    if (/pay period|net pay|payg|superannuation/.test(header)) return 'xero';
+    if (/transaction date|description|withdrawal|deposit|statement/.test(header)) return 'bank';
+  }
+  if (buffer.subarray(0, 5).toString('ascii') === '%PDF-') {
+    try { await parsePdfImport('xero', buffer); return 'xero'; } catch { try { await parsePdfImport('bank', buffer); return 'bank'; } catch { /* handled by the caller with a useful error */ } }
+  }
+  throw Object.assign(new Error('Could not detect the report source. Choose Stripe, Xero, or ING in Import & Review.'), { status: 422 });
+}
+
 function summaryPeriod(summary) {
   return { periodStart: summary?.payPeriodStart || summary?.statementStart || null, periodEnd: summary?.payPeriodEnd || summary?.statementEnd || null };
 }
@@ -50,7 +67,8 @@ export function getImport(db, idValue) {
   return { ...toImport(job), rows: all(db, 'SELECT * FROM import_staging WHERE import_job_id=? ORDER BY row_number', idValue) };
 }
 
-export async function stageImport(db, { sourceAccountId, fileName, buffer }) {
+export async function stageImport(db, { sourceAccountId = 'auto', fileName, buffer }) {
+  if (sourceAccountId === 'auto' || !sourceAccountId) sourceAccountId = await detectSourceAccount(db, fileName, buffer);
   const account = one(db, 'SELECT * FROM accounts WHERE id = ? AND active = 1', sourceAccountId);
   if (!account) throw Object.assign(new Error('Unknown or inactive source account'), { status: 400 });
   const fileHash = sha256(buffer);

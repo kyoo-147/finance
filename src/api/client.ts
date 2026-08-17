@@ -51,7 +51,7 @@ export const financeApi = {
   reRunCategoryRules: () => request<{ updated?: Transaction[] }>('/category-rules/apply', { method: 'POST' }),
   createManualTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'sourceAccountId' | 'currency' | 'isManual'>) => request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(transaction) }),
   deleteManualTransaction: (id: string) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),
-  uploadImport: (file: File, sourceAccountId: string) => {
+  uploadImport: (file: File, sourceAccountId = 'auto') => {
     const data = new FormData(); data.append('file', file); data.append('sourceAccountId', sourceAccountId);
     return request<ImportJob>('/imports', { method: 'POST', body: data });
   },
