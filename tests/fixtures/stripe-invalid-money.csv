@@ -1,0 +1,2 @@
+payout_id,effective_at,currency,gross,fee,net,reporting_category,balance_transaction_id,description,payout_expected_arrival_date,payout_status
+po_test_bad_amount,2026-07-31 00:01:27,aud,not-a-number,0.00,200.19,payout,txn_test_bad_amount,STRIPE PAYOUT,2026-07-31 00:00:00,paid

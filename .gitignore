@@ -1,0 +1,14 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+data/
+uploads/
+.env*
+!.env.example
+
+# Local QA artifacts may contain financial fixture data and are not published.
+tests/artifacts/
+.lavish/
