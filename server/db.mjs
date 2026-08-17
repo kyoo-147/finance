@@ -53,7 +53,6 @@ function migrate(db) {
     CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, action TEXT NOT NULL, before_json TEXT, after_json TEXT, created_at TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(occurred_on);
     CREATE INDEX IF NOT EXISTS idx_transactions_import ON transactions(import_job_id);
-    CREATE INDEX IF NOT EXISTS idx_transactions_reconciliation ON transactions(reconciled_transaction_id);
     CREATE INDEX IF NOT EXISTS idx_staging_job ON import_staging(import_job_id);
   `);
   addColumn(db, 'import_jobs', 'duplicate_rows INTEGER NOT NULL DEFAULT 0');
