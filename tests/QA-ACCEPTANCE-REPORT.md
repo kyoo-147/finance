@@ -23,7 +23,7 @@
 
 ```text
 npm run lint         -> PASS
-npm run server:test  -> 26 passed, 0 failed
+npm run server:test  -> 27 passed, 0 failed
 npm run build        -> PASS
 npm run browser:e2e  -> PASS
 node tests/api-contract.mjs -> 5 passed
