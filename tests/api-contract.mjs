@@ -51,6 +51,14 @@ await test('health endpoint is local and reports ready', async () => {
   assert.ok(json?.ok === true || json?.status === 'ok', 'health must return ok/status=ok');
 });
 
+await test('version endpoint exposes only deployment identity', async () => {
+  const { response, json, body } = await request('/version');
+  assert.equal(response.status, 200, body);
+  assert.deepEqual(Object.keys(json).sort(), ['commit', 'environment']);
+  assert.equal(typeof json.commit, 'string');
+  assert.equal(typeof json.environment, 'string');
+});
+
 await test('Stripe July CSV imports exact minor-unit totals', async () => {
   const source = resolve('..', expected.stripe_july_2026.source_file);
   const result = await upload('stripe', source);

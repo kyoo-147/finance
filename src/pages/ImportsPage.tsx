@@ -21,6 +21,8 @@ export const ImportsPage: React.FC = () => {
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewJobs, setPreviewJobs] = useState<typeof importJobs[number][]>([]);
+  const [revertingId, setRevertingId] = useState<string | null>(null);
+  const [revertError, setRevertError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeJob = importJobs.find(
@@ -34,6 +36,12 @@ export const ImportsPage: React.FC = () => {
   );
 
   const pendingReviewJobs = importJobs.filter((j) => j.issuesCount && j.issuesCount > 0);
+
+  const handleRevert = async (jobId: string) => {
+    if (!window.confirm('Undo this import batch? Only transactions from this batch will be removed.')) return;
+    setRevertError(null); setRevertingId(jobId);
+    try { await revertImport(jobId); } catch (error) { setRevertError(error instanceof Error ? error.message : 'Unable to undo this import batch.'); } finally { setRevertingId(null); }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -64,6 +72,7 @@ export const ImportsPage: React.FC = () => {
         </div>
       </HeroBanner>
       {uploadError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{uploadError}</div>}
+      {revertError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{revertError}</div>}
 
       {/* Workflow Stepper: Upload -> Processing -> Review -> Complete */}
       <div className="bg-white rounded-[14px] border border-slate-200/80 p-3.5 shadow-2xs">
@@ -301,7 +310,7 @@ export const ImportsPage: React.FC = () => {
                     </td>
                     <td className="py-2.5 px-3 text-right space-x-2">
                       {job.status === 'review_required' && <button onClick={() => setPreviewJobs([job])} className="text-[11.5px] font-bold text-amber-700 hover:underline cursor-pointer">Preview & Confirm</button>}
-                      {job.status === 'committed' && <button onClick={() => { if (window.confirm('Undo this import batch? Only transactions from this batch will be removed.')) void revertImport(job.id); }} className="text-[11.5px] font-bold text-rose-700 hover:underline cursor-pointer">Undo Import</button>}
+                      {job.status === 'committed' && <button type="button" data-import-id={job.id} disabled={revertingId === job.id} onClick={() => void handleRevert(job.id)} className="text-[11.5px] font-bold text-rose-700 hover:underline cursor-pointer disabled:opacity-50">{revertingId === job.id ? 'Undoing…' : 'Undo Import'}</button>}
                       {(job.status === 'committed' || job.status === 'reverted') && <button onClick={() => setActiveTab('transactions')} className="text-[11.5px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">View Ledger</button>}
                       {hasIssues && <button onClick={() => setActiveTab('transactions')} className="text-[11.5px] font-bold text-amber-700 hover:underline cursor-pointer">Review Items ({job.issuesCount}) â†’</button>}
                     </td>

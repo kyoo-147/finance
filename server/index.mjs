@@ -14,6 +14,7 @@ if (config.authUser || config.authPassword) app.use((req,res,next)=>{ if (req.pa
 const sendError=(res,error)=>res.status(error.status ?? 500).json({error:error.message ?? 'Unexpected server error', importId:error.importId});
 
 app.get('/api/health', (_req,res)=>res.json({status:'ok', mode:config.publicMode ? 'public-protected' : 'local-only', database:'sqlite'}));
+app.get('/api/version', (_req,res)=>res.json({commit:config.commit, environment:config.environment}));
 app.get('/api/bootstrap', (_req,res)=>res.json(bootstrap(db)));
 app.patch('/api/accounts/:id',(req,res)=>{try{const before=db.prepare('SELECT * FROM accounts WHERE id=?').get(req.params.id);if(!before)throw Object.assign(new Error('Import source not found'),{status:404});const active=Number(Boolean(req.body.active));db.prepare('UPDATE accounts SET active=? WHERE id=?').run(active,req.params.id);const after=db.prepare('SELECT * FROM accounts WHERE id=?').get(req.params.id);audit(db,'account',after.id,active?'enabled':'disabled',before,after);res.json({id:after.id,provider:after.source_type,displayName:after.name,status:after.active?'connected':'disconnected'});}catch(e){sendError(res,e);}});
 app.get('/api/dashboard', (req,res)=>res.json(dashboard(db, typeof req.query.month === 'string' ? req.query.month : null)));

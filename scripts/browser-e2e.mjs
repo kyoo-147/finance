@@ -93,7 +93,7 @@ async function upload(account, file, marker) {
   await click('Preview & Confirm');
   await waitFor(`document.body.innerText.includes('Import Preview')`, `${account} preview dialog`);
   await click('Confirm Import');
-  await waitFor(`document.body.innerText.includes('Completed') && document.body.innerText.includes(${JSON.stringify(marker)})`, `${account} import commit`);
+  await waitFor(`(()=>{const row=[...document.querySelectorAll('tr')].find(x=>x.innerText.includes(${JSON.stringify(marker)})); return !!row && row.innerText.includes('Completed')})()`, `${account} import commit`);
 }
 async function stopServer() {
   if (!server || server.exitCode !== null) return;
@@ -136,6 +136,28 @@ try {
   await upload('stripe', 'tests/fixtures/stripe-browser.csv', '1');
   if (existsSync(resolve('../PaySlip (7).pdf'))) await upload('xero', '../PaySlip (7).pdf', 'PaySlip (7).pdf');
   if (existsSync(resolve('../Expenses Statement.pdf'))) await upload('bank', '../Expenses Statement.pdf', 'Expenses Statement.pdf');
+
+  // Real browser rollback acceptance: isolate one committed batch and verify its full lifecycle.
+  const rollbackFile = join(dataDir, 'rollback-acceptance.csv');
+  await writeFile(rollbackFile, Buffer.from('payout_id,effective_at,currency,gross,fee,net,description\nrollback-acceptance,2026-07-25 10:00:00,aud,100.00,0.00,100.00,ROLLBACK ACCEPTANCE\n'));
+  const rollbackBefore = await evaluate(`Promise.all([fetch('/api/dashboard?month=2026-07').then(r=>r.json()), fetch('/api/bootstrap').then(r=>r.json())])`);
+  await upload('stripe', rollbackFile, 'rollback-acceptance.csv');
+  const rollbackAfter = await evaluate(`Promise.all([fetch('/api/dashboard?month=2026-07').then(r=>r.json()), fetch('/api/bootstrap').then(r=>r.json())])`);
+  assert.equal(rollbackAfter[1].transactions.filter((t) => t.description.includes('ROLLBACK ACCEPTANCE')).length, 1, 'rollback batch was not committed');
+  assert.notEqual(rollbackAfter[0].totals.income_minor, rollbackBefore[0].totals.income_minor, 'rollback batch did not change dashboard');
+  const rollbackJob = rollbackAfter[1].importJobs.find((job) => job.fileName === 'rollback-acceptance.csv');
+  assert.ok(rollbackJob?.status === 'committed', 'rollback batch is not committed');
+  await evaluate(`window.confirm=()=>true`);
+  await evaluate(`document.querySelector('button[data-import-id="${rollbackJob.id}"]')?.click()`);
+  await waitFor(`(()=>{const row=[...document.querySelectorAll('tr')].find(x=>x.innerText.includes('rollback-acceptance.csv')); return !!row && row.innerText.includes('Reverted')})()`, 'undo import');
+  const rollbackUndo = await evaluate(`Promise.all([fetch('/api/dashboard?month=2026-07').then(r=>r.json()), fetch('/api/bootstrap').then(r=>r.json())])`);
+  assert.equal(rollbackUndo[1].transactions.filter((t) => t.description.includes('ROLLBACK ACCEPTANCE')).length, 0, 'undo left batch transactions');
+  assert.equal(rollbackUndo[0].totals.income_minor, rollbackBefore[0].totals.income_minor, 'undo did not restore dashboard');
+  assert.equal(rollbackUndo[1].transactions.length, rollbackBefore[1].transactions.length, 'undo removed unrelated transactions');
+  assert.equal(rollbackUndo[1].transactions.filter((t) => t.sourceAccountId === 'bank' && t.reconciliationStatus === 'matched').length, rollbackBefore[1].transactions.filter((t) => t.sourceAccountId === 'bank' && t.reconciliationStatus === 'matched').length, 'undo did not restore reconciliation');
+  await stopServer(); launchServer(); await waitForServer(); await navigate();
+  const rollbackRestart = await evaluate(`fetch('/api/bootstrap').then(r=>r.json())`);
+  assert.equal(rollbackRestart.transactions.filter((t) => t.description.includes('ROLLBACK ACCEPTANCE')).length, 0, 'reverted state did not persist after restart');
   const afterAssetCategory = await evaluate(`fetch('/api/bootstrap').then(r=>r.json())`);
   assert.equal(afterAssetCategory.assets.find((x) => x.name === 'Browser E2E Reserve Updated')?.category, 'vehicle', 'asset category did not round-trip');
   const afterImports = await evaluate(`fetch('/api/bootstrap').then(r=>r.json())`);

@@ -9,4 +9,6 @@ export const config = Object.freeze({
   authUser: process.env.JERRI_AUTH_USER ?? '',
   authPassword: process.env.JERRI_AUTH_PASSWORD ?? '',
   publicMode: process.env.JERRI_PUBLIC_MODE === 'true',
+  commit: process.env.JERRI_COMMIT ?? 'unknown',
+  environment: process.env.JERRI_ENV ?? (process.env.JERRI_PUBLIC_MODE === 'true' ? 'production' : 'development'),
 });
