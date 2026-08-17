@@ -235,7 +235,7 @@ try {
 
   await cdp('Fetch.enable', { patterns: [{ urlPattern: '*://127.0.0.1:4777/api/*' }] });
   await cdp('Page.reload');
-  await waitFor(`document.body.innerText.includes('Không thể kết nối')`, 'degraded state');
+  await waitFor(`document.body.innerText.includes('Unable to connect')`, 'degraded state');
   await capture('UI-07-degraded-api');
   await cdp('Fetch.disable');
   await navigate();

@@ -84,9 +84,9 @@ This assistant only explains the current local ledger; it does not provide finan
       } else if (lower.includes('runway') || lower.includes('cash flow') || lower.includes('cash')) {
         aiResponseText = `A runway figure is unavailable because the local ledger has no verified liquid-balance history. Current verified business net profit is **${formatMoney(netProfit)}**; open Cash Flow for recorded cash movements.`;
       } else if (lower.includes('tax') || lower.includes('reserve')) {
-        aiResponseText = `Tax Reserve is derived directly from your **Profit Allocation Rules**:\n\nâ€¢ **Tax Allocation**: **${(taxRuleBps / 100).toFixed(1)}%**\nâ€¢ **Net Profit**: ${formatMoney(netProfit)}\nâ€¢ **Calculated Reserve**: **${formatMoney(taxReserve)}**\n\nThis amount is isolated from operational funds to ensure tax lodgements are fully covered.`;
+        aiResponseText = `Tax Reserve is derived directly from your **Profit Allocation Rules**:\n\n• **Tax Allocation**: **${(taxRuleBps / 100).toFixed(1)}%**\n• **Net Profit**: ${formatMoney(netProfit)}\n• **Calculated Reserve**: **${formatMoney(taxReserve)}**\n\nThis amount is isolated from operational funds to ensure tax lodgements are fully covered.`;
       } else {
-        aiResponseText = `Checked books for **"${text}"**:\n\nâ€¢ **Current Net Margin**: ${((netProfit / (totalIncome || 1)) * 100).toFixed(1)}%\nâ€¢ **Reviewed Transactions**: ${transactions.filter((t) => t.reviewStatus === 'reviewed').length} / ${transactions.length}\nâ€¢ **Tax Vault Reserve**: ${formatMoney(taxReserve)}\n\nIs there a specific category or transaction breakdown you need?`;
+        aiResponseText = `Checked books for **"${text}"**:\n\n• **Current Net Margin**: ${((netProfit / (totalIncome || 1)) * 100).toFixed(1)}%\n• **Reviewed Transactions**: ${transactions.filter((t) => t.reviewStatus === 'reviewed').length} / ${transactions.length}\n• **Tax Vault Reserve**: ${formatMoney(taxReserve)}\n\nIs there a specific category or transaction breakdown you need?`;
       }
 
       const aiMsg: Message = {

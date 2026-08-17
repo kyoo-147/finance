@@ -38,7 +38,7 @@ export const ImportsPage: React.FC = () => {
     const files = e.target.files;
     if (files && files.length > 0) {
       setUploadError(null);
-      try { await uploadImport(files[0], selectedAccount); } catch (error) { setUploadError(error instanceof ApiError && error.status === 409 ? 'File này đã được import trước đó; không có transaction mới được tạo.' : error instanceof ApiError ? error.message : 'Không thể xử lý file này. Hãy kiểm tra định dạng CSV và thử lại.'); }
+      try { await uploadImport(files[0], selectedAccount); } catch (error) { setUploadError(error instanceof ApiError && error.status === 409 ? 'This file was already imported; no new transactions were created.' : error instanceof ApiError ? error.message : 'Unable to process this file. Check the CSV format and try again.'); }
       e.target.value = '';
     }
   };

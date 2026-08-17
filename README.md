@@ -1,37 +1,36 @@
 # Jerri Finance Portal
 
-Ứng dụng quản lý tài chính cá nhân chạy hoàn toàn trên máy tính. Web chỉ lắng nghe tại `http://127.0.0.1:4747`; không có cloud account, API key, hay upload dữ liệu tới Internet.
+A local-only personal finance management application. The web server listens only on `http://127.0.0.1:4747`; there are no cloud accounts, API keys, or uploads to the Internet.
 
-## Cài đặt và mở ứng dụng
+## Install and launch
 
-Yêu cầu Node.js 24 hoặc mới hơn.
+Requires Node.js 24 or newer.
 
-1. Mở Terminal tại thư mục dự án và chạy `npm install`.
-2. Chạy `npm run build`.
-3. Nhấp đúp **Start Jerri Finance Portal.cmd**.
+1. Open a terminal in the project directory and run `npm install`.
+2. Run `npm run build`.
+3. Double-click **Start Jerri Finance Portal.cmd**.
 
-Launcher tự kiểm tra dependency, production build và local health endpoint trước khi mở browser. Nếu portal đang chạy, launcher chỉ mở tab mới. Giữ cửa sổ server mở trong lúc sử dụng; đóng cửa sổ đó để dừng portal.
+The launcher checks dependencies, the production build, and the local health endpoint before opening the browser. If the portal is already running, it opens a new tab only. Keep the server window open while using the portal; close it to stop the portal.
 
-## Nguồn import
+## Import sources
 
 - Stripe: Itemised Payouts CSV.
-- Xero: CSV hoặc payslip PDF text-based theo layout mẫu.
-- ING: CSV hoặc Orange Everyday statement PDF text-based theo layout mẫu.
+- Xero: CSV or text-based payslip PDF using the expected layout.
+- ING: CSV or text-based Orange Everyday statement PDF using the expected layout.
 
-PDF chỉ được chấp nhận khi đọc được các trường bắt buộc và đối soát chính xác. PDF scan, password-protected, hỏng, layout lạ hoặc không đối soát sẽ bị từ chối an toàn trước khi ghi transaction. Bank transaction luôn review-first; Stripe settlement và transfer không tự cộng vào business profit.
+PDF files are accepted only when required fields can be read and the values reconcile exactly. Scanned, password-protected, corrupted, unexpected-layout, or unreconciled PDFs are safely rejected before any transaction is written. Bank transactions are always review-first; Stripe settlements and transfers are not automatically included in business profit.
 
-## Sao lưu và khôi phục
+## Backup and restore
 
-Trong **Settings → Local Data**, chọn **Download backup**. File `.json` chứa database SQLite cùng manifest SHA-256. Lưu file này ở ổ đĩa khác hoặc backup drive.
+In **Settings → Local Data**, choose **Download backup**. The `.json` file contains the SQLite database and a SHA-256 manifest. Store it on a separate drive or backup device.
 
-Để khôi phục, chọn **Choose backup**. Portal xác minh format, checksum, kích thước, SQLite integrity và các bảng bắt buộc trước khi thay dữ liệu hiện tại. Khôi phục là thao tác thay thế toàn bộ dữ liệu local; hãy export backup mới trước khi thực hiện.
+To restore, choose **Choose backup**. The portal validates the format, checksum, size, SQLite integrity, and required tables before replacing current data. Restore replaces all local data; create a fresh backup before restoring.
 
-Database hoạt động nằm tại `data/jerri-finance.sqlite`. Mọi giá tiền lưu integer cents; không dùng float cho các số tiền trong database/API. Bảo vệ máy bằng Windows account và BitLocker khi có thể; SQLite không được mã hóa ở tầng database trong V1.
+The active database is stored at `data/jerri-finance.sqlite`. All monetary values are stored as integer cents; floating-point values are not used for money in the database or API. Protect the computer with a Windows account and BitLocker where possible; SQLite is not encrypted at the database layer in V1.
 
-## Kiểm thử
+## Testing
 
-- `npm run lint` — type-check frontend.
+- `npm run lint` — frontend type-check.
 - `npm run build` — production build.
-- `npm run server:test` — regression test cho import PDF/CSV, financial integrity, SQLite atomicity, backup/restore và persistence.
-- `npm run browser:e2e` — full Chrome/CDP acceptance trên database cô lập. Cần Chrome chạy với remote debugging `:9222`; runner tự khởi động local server và ghi screenshot vào `tests/artifacts/ui-e2e/`.
-
+- `npm run server:test` — regression tests for PDF/CSV imports, financial integrity, SQLite atomicity, backup/restore, and persistence.
+- `npm run browser:e2e` — full Chrome/CDP acceptance run against an isolated database. Chrome must run with remote debugging on `:9222`; the runner starts the local server and writes screenshots to `tests/artifacts/ui-e2e/`.

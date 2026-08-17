@@ -1,68 +1,68 @@
-# Kiểm thử và đối soát
+# Testing and reconciliation
 
-Thư mục này độc lập với ứng dụng. Nó không sửa dữ liệu nguồn và không phụ thuộc thư viện test bên ngoài.
+This directory is independent from the application. It does not modify source data and does not depend on external test libraries.
 
-## Dữ liệu chuẩn đã đối soát
+## Reconciled reference data
 
-`fixtures/expected-reconciliation.json` là **nguồn chuẩn kiểm thử**, không phải dữ liệu giả của UI:
+`fixtures/expected-reconciliation.json` is the **testing reference**, not mock UI data:
 
-- Stripe tháng 07/2026: 23 payout; gross = net = 502,242 cents (AUD 5,022.42); fee = 0.
-- Xero payslip: kỳ 20/07/2026-02/08/2026, thanh toán 04/08/2026; gross 72,000 cents; PAYG 12,800 cents; net 59,200 cents; super 8,640 cents.
-- ING bank statement: mở kỳ 57,810 cents, đóng kỳ 121,419 cents; biến động ròng 63,609 cents.
+- Stripe July 2026: 23 payouts; gross = net = 502,242 cents (AUD 5,022.42); fee = 0.
+- Xero payslip: period 20/07/2026–02/08/2026, paid 04/08/2026; gross 72,000 cents; PAYG 12,800 cents; net 59,200 cents; super 8,640 cents.
+- ING bank statement: opening balance 57,810 cents, closing balance 121,419 cents; net movement 63,609 cents.
 
-Bank statement có giao dịch cá nhân, business, Stripe settlements, transfers và debt repayment. Vì vậy tổng withdrawal **không được** dùng trực tiếp làm business expenses hay profit calculation.
+The bank statement contains personal, business, Stripe settlement, transfer, and debt-repayment transactions. Therefore, total withdrawals **must not** be used directly as business expenses or profit.
 
-## Chạy API acceptance harness
+## Run the API acceptance harness
 
-1. Khởi động ứng dụng local và để API chỉ bind `127.0.0.1`.
-2. Đặt URL rồi chạy:
+1. Start the local application and ensure the API binds to `127.0.0.1` only.
+2. Set the URL and run:
 
 ```powershell
 $env:API_BASE_URL = 'http://127.0.0.1:4747'
 node tests/api-contract.mjs
 ```
 
-Harness kỳ vọng API có namespace `/api` (thay bằng `$env:API_PREFIX` nếu cần) và tối thiểu:
+The harness expects the `/api` namespace (replace it with `$env:API_PREFIX` if needed) and at minimum:
 
-| Endpoint | Mục đích |
+| Endpoint | Purpose |
 | --- | --- |
-| `GET /api/health` | Trả `{ ok: true }` hoặc `{ status: "ok" }` |
-| `POST /api/imports` | Nhận multipart `source` và `file`; trả import id + summary |
+| `GET /api/health` | Returns `{ ok: true }` or `{ status: "ok" }` |
+| `POST /api/imports` | Accepts multipart `source` and `file`; returns an import ID and summary |
 
-Khi backend API ổn định, cập nhật adapter endpoint trong harness thay vì sửa số liệu chuẩn.
+Once the backend API is stable, update the endpoint adapter in the harness rather than changing the reference figures.
 
-## Ma trận E2E bắt buộc trước bàn giao
+## Required E2E handover matrix
 
-| Nhóm | Case | Kết quả phải đúng |
+| Group | Case | Required result |
 | --- | --- | --- |
-| Startup | Mở shortcut | Browser mở local URL; service chỉ listen 127.0.0.1 |
-| Stripe | Upload file thật tháng 07/2026 | 23 records, gross/net AUD 5,022.42, zero fees, AUD, 23 payout IDs duy nhất |
-| Stripe | Upload lại cùng file | Không có record mới; báo duplicate/idempotent rõ ràng |
-| Stripe | Amount không hợp lệ | Fail toàn bộ import, không partial commit |
-| Stripe | Currency USD fixture | Require explicit reject hoặc review; không cộng vào AUD dashboard im lặng |
-| Xero | Upload payslip nguồn | Payment date 04/08/2026; gross/PAYG/net/super khớp fixture; `gross - PAYG = net` |
-| Bank | Upload statement nguồn | Nhận diện period và opening/closing balances; `opening + deposits - withdrawals = closing` |
-| Bank | Rule categorisation | `STRIPE`/internal transfer/debt repayment phải excluded khỏi business expense mặc định; unknown phải `needs_review` |
-| Transactions | Sửa category/scope | Dashboard và allocation phản ánh đúng; audit event được tạo |
-| Allocation | 7 quỹ mặc định | Tổng đúng 10,000 bps; không cho save nếu khác 100% |
-| Money | Các phép tính | Lưu và trả integer cents; không float/rounding drift |
-| Restart | Tắt/mở local server | SQLite giữ nguyên data, import hash, rule và audit log |
-| Offline | Không có Internet | Import, dashboard và lịch sử vẫn hoạt động |
-| Security | Cổng local | Không bind `0.0.0.0`; không gửi source file/PII ra ngoài |
+| Startup | Launch shortcut | Browser opens the local URL; service listens on 127.0.0.1 only |
+| Stripe | Upload the July 2026 source file | 23 records, gross/net AUD 5,022.42, zero fees, AUD, 23 unique payout IDs |
+| Stripe | Upload the same file again | No new records; a clear duplicate/idempotent message |
+| Stripe | Invalid amount | Entire import fails with no partial commit |
+| Stripe | USD fixture | Explicit rejection or review; it must not silently enter the AUD dashboard |
+| Xero | Upload source payslip | Payment date 04/08/2026; gross/PAYG/net/super match the fixture; `gross - PAYG = net` |
+| Bank | Upload source statement | Period and opening/closing balances are detected; `opening + deposits - withdrawals = closing` |
+| Bank | Categorization rules | `STRIPE`/internal transfer/debt repayment are excluded from business expenses by default; unknown is `needs_review` |
+| Transactions | Edit category/scope | Dashboard and allocation reflect the change; an audit event is created |
+| Allocation | Seven default funds | Total is exactly 10,000 bps; saving is blocked when the total differs from 100% |
+| Money | Calculations | Integer cents are stored and returned; no floating-point or rounding drift |
+| Restart | Stop/start the local server | SQLite preserves data, import hashes, rules, and audit log |
+| Offline | No Internet connection | Imports, dashboard, and history continue to work |
+| Security | Local port | The service does not bind to `0.0.0.0`; source files and PII are not sent externally |
 
-## Tiêu chí nghiệm thu tài chính
+## Financial acceptance criteria
 
-1. Các mutation import phải atomic: thành công toàn bộ hoặc không ghi gì.
-2. Duplicate file hash và duplicate business key (provider transaction/payout id) đều phải được chặn.
-3. Tiền chỉ dùng integer minor units trong DB/API; UI mới format sang AUD.
-4. Xero superannuation là employer contribution, không được cộng vào cash net pay.
-5. Stripe payout là cash settlement; không được double-count nếu cùng settlement xuất hiện trong bank statement.
-6. Business classification là quyết định có thể review/audit, không suy diễn chắc chắn từ một merchant unknown.
+1. Import mutations are atomic: either the entire operation succeeds or nothing is written.
+2. Duplicate file hashes and duplicate business keys (provider transaction/payout IDs) are blocked.
+3. Money uses integer minor units in the database/API; the UI only formats values as AUD.
+4. Xero superannuation is an employer contribution and must not be added to cash net pay.
+5. A Stripe payout is a cash settlement and must not be double-counted when the same settlement appears in a bank statement.
+6. Business classification is reviewable and auditable; it must not be inferred with certainty from an unknown merchant.
 
-## Browser E2E authoritative runner
+## Authoritative browser E2E runner
 
 ```text
 npm run browser:e2e
 ```
 
-Runner uses Chrome/CDP and an isolated SQLite database. It covers transactions, rules, allocation, holdings, settings, backup/restore, restart persistence, degraded/error states and screenshots. The consolidated result is maintained only in `QA-ACCEPTANCE-REPORT.md`.
+The runner uses Chrome/CDP and an isolated SQLite database. It covers transactions, rules, allocation, holdings, settings, backup/restore, restart persistence, degraded/error states, and screenshots. The consolidated result is maintained only in `QA-ACCEPTANCE-REPORT.md`.

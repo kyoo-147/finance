@@ -1,10 +1,10 @@
-# QA nghiệm thu — Jerri Finance Portal
+# QA acceptance report — Jerri Finance Portal
 
-**Ngày rà soát:** 2026-08-15
+**Review date:** 2026-08-15
 
-## Kết luận hiện tại
+## Current conclusion
 
-Core backend, FE/BE round-trip chính và browser acceptance runner đã được sửa và pass trên môi trường hiện tại. **Chưa ký nghiệm thu cuối cùng** vì vẫn còn một số capability chưa hoàn chỉnh: endpoint contract coverage, mobile/native startup và các UI phụ trợ.
+The core backend, FE/BE round trips, and browser acceptance runner have been corrected and pass in the current environment. **Final acceptance is not signed off yet** because endpoint contract coverage, mobile/native startup, and several supporting UI flows remain incomplete.
 
 ## Validation
 
@@ -12,39 +12,39 @@ Core backend, FE/BE round-trip chính và browser acceptance runner đã đượ
 npm run lint         -> PASS
 npm run server:test  -> 21 passed, 0 failed
 npm run build        -> PASS
-npm run browser:e2e  -> PASS trên DB cô lập
+npm run browser:e2e  -> PASS against an isolated database
 ```
 
-## Đã sửa trong vòng này
+## Fixed in this iteration
 
-- Asset/liability schema lưu `category`; bootstrap và update giữ đúng category sau refresh/restart.
-- Import jobs lưu và trả `duplicate_rows`.
-- `needs_review` transaction giữ `scope: unknown`, không bị giả thành personal.
-- Overview Tax Reserve lấy tỷ lệ Tax từ allocation rules thay vì hard-code 25%.
-- Overview/Cash Flow chỉ dùng liquid assets cho cash balance.
-- Cash Flow lọc business/in-profit và tạo các tháng forecast thực tế theo lựa chọn 3M/6M/12M.
-- Passive income dùng `returnMtdMinor`, không dùng portfolio value.
-- FE mutations propagate lỗi; form/save flows không còn tự coi request thất bại là thành công.
-- Category-rule update đã nối từ Settings UI → client → Express → SQLite.
-- Re-run category rules chạy atomic và tạo audit event `rule_applied` cho từng transaction thay đổi.
-- Thêm regression tests cho asset/liability category round-trip và unknown scope.
-- Browser runner kiểm tra category round-trip, transactions/rules/allocation/holdings/settings, backup/restore, restart, degraded/error screenshots.
-- QA logs cũ chỉ còn compatibility pointers; file này là nguồn acceptance duy nhất.
+- Asset/liability schema stores `category`; bootstrap and update preserve category after refresh/restart.
+- Import jobs store and return `duplicate_rows`.
+- `needs_review` transactions retain `scope: unknown` instead of being treated as personal.
+- Overview Tax Reserve uses the Tax allocation rule instead of a hard-coded 25%.
+- Overview/Cash Flow use liquid assets for the cash balance.
+- Cash Flow filters business/in-profit transactions and generates real forecast months for 3M/6M/12M selections.
+- Passive income uses `returnMtdMinor`, not portfolio value.
+- FE mutations propagate errors; forms and save flows no longer report failed requests as successful.
+- Category-rule update is wired from Settings UI → client → Express → SQLite.
+- Category-rule re-run is atomic and creates a `rule_applied` audit event for each changed transaction.
+- Regression tests cover asset/liability category round trips and unknown transaction scope.
+- The browser runner checks category round trips, transactions/rules/allocation/holdings/settings, backup/restore, restart, and degraded/error screenshots.
+- Older QA logs are compatibility pointers; this file is the only acceptance source.
 
-## Còn mở trước nghiệm thu cuối
+## Open before final acceptance
 
 ### P1
 
-1. **Chưa có browser evidence riêng cho re-run semantics** dù backend atomic/audited đã được sửa.
-2. **Endpoint contract suite còn hẹp.** `tests/api-contract.mjs` mới kiểm tra health, Stripe import, duplicate, invalid import và allocation shape; chưa cover toàn bộ mutation routes.
-3. **Error UX chưa đồng nhất ở các thao tác fire-and-forget**, đặc biệt toggle source/rerun settings; global error banner có nhưng thiếu inline pending/error state.
+1. There is no separate browser evidence for re-run semantics, although the backend is now atomic and audited.
+2. The endpoint contract suite is still narrow. `tests/api-contract.mjs` checks health, Stripe import, duplicate, invalid import, and allocation shape, but does not cover every mutation route.
+3. Error UX is not consistent for all fire-and-forget operations, especially source toggles and settings re-run; the global error banner exists but inline pending/error states are incomplete.
 
-### P2 / boundary
+### P2 / boundaries
 
-4. Browser runner chưa cover đầy đủ Global Search, Notification Drawer, AI assistant refresh, CSV download, mobile matrix hiện tại và launcher `.cmd`.
-5. AI assistant là local deterministic explanation, không phải AI backend/financial adviser.
-6. Native Windows launcher/shortcut/manual startup proof nằm ngoài CDP runner.
-7. Cloud sync, bank OAuth/live feeds và online account ngoài phạm vi local-only V1.
+4. The browser runner does not fully cover Global Search, Notification Drawer, AI assistant refresh, CSV download, the current mobile matrix, or the `.cmd` launcher.
+5. The AI assistant provides local deterministic explanations; it is not an AI backend or financial adviser.
+6. Native Windows launcher/shortcut/manual-startup proof is outside the CDP runner.
+7. Cloud sync, bank OAuth/live feeds, and online accounts are outside the local-only V1 scope.
 
 ## Evidence
 
@@ -53,6 +53,6 @@ npm run browser:e2e  -> PASS trên DB cô lập
 - Screenshots: `tests/artifacts/ui-e2e/`
 - FE/BE adapter: `src/api/client.ts`, `src/context/FinanceContext.tsx`
 
-Không được gọi sản phẩm “hoàn chỉnh 100%” cho đến khi P1 được đóng và browser/mobile/native boundaries được phân loại rõ bằng evidence mới.
+Do not call the product “100% complete” until P1 items are closed and browser/mobile/native boundaries are classified with new evidence.
 
 Browser screenshots are generated under `tests/artifacts/ui-e2e/` locally and intentionally ignored from GitHub because they can contain financial fixture data.

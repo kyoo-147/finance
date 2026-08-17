@@ -117,8 +117,8 @@ const MainLayout: React.FC = () => {
 
         {/* Main Workspace View Switcher (Added top padding for clear visual separation) */}
         <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-6 lg:pt-7 pb-12 max-w-[1720px] w-full mx-auto space-y-6">
-          {isLoading && <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">Đang tải dữ liệu tài chính từ máy này…</div>}
-          {apiError && <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><span>{apiError}</span><button onClick={() => void refresh()} className="font-semibold underline">Thử lại</button></div>}
+          {isLoading && <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">Loading financial data from this device…</div>}
+          {apiError && <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><span>{apiError}</span><button onClick={() => void refresh()} className="font-semibold underline">Retry</button></div>}
           {activeTab === 'overview' && <OverviewPage />}
           {activeTab === 'imports' && <ImportsPage />}
           {activeTab === 'transactions' && <TransactionsPage />}

@@ -39,7 +39,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [settings, setSettings] = useState(emptySettings); const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true); const [apiError, setApiError] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false); const [isNotificationsOpen, setIsNotificationsOpen] = useState(false); const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
-  const reportError = (error: unknown) => setApiError(error instanceof ApiError ? error.message : 'Không thể kết nối với dịch vụ tài chính cục bộ.');
+  const reportError = (error: unknown) => setApiError(error instanceof ApiError ? error.message : 'Unable to connect to the local finance service.');
   const refresh = useCallback(async () => { setIsLoading(true); setApiError(null); try { const s = await financeApi.snapshot(); setBusinessProfile(s.businessProfile); setConnectedAccounts(s.connectedAccounts); setCategories(s.categories); setTransactions(s.transactions); setImportJobs(s.importJobs); setCategoryRules(s.categoryRules); setAllocationRules(s.allocationRules); setAssets(s.assets); setLiabilities(s.liabilities); setHoldings(s.holdings); setSettings(s.settings); setActivityEvents(s.activityEvents); } catch (e) { reportError(e); } finally { setIsLoading(false); } }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   const updateTransaction = async (id: string, patch: Partial<Transaction>) => { try { const updated = await financeApi.updateTransaction(id, patch); setTransactions(p => p.map(x => x.id === id ? updated : x)); } catch (e) { reportError(e); throw e; } };
