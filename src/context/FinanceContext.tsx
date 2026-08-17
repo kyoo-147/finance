@@ -14,7 +14,10 @@ interface FinanceContextType {
   isAiAssistantOpen: boolean; setIsAiAssistantOpen: (open: boolean) => void;
   updateTransaction: (id: string, patch: Partial<Transaction>) => Promise<void>;
   bulkCategorizeTransactions: (ids: string[], categoryId: string, scope: TransactionScope, includedInProfit: boolean) => Promise<void>;
-  markReviewed: (id: string) => Promise<void>; createCategoryRule: (rule: Omit<CategoryRule, 'id'>) => Promise<void>; updateCategoryRule: (id: string, rule: Omit<CategoryRule, 'id'>) => Promise<void>;
+  createManualTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'sourceAccountId' | 'currency' | 'isManual'>) => Promise<void>;
+  deleteManualTransaction: (id: string) => Promise<void>;
+  commitImport: (id: string) => Promise<void>; revertImport: (id: string) => Promise<void>; clearImportedData: () => Promise<void>; resetWorkspace: () => Promise<void>;
+  createCategoryRule: (rule: Omit<CategoryRule, 'id'>) => Promise<void>; updateCategoryRule: (id: string, rule: Omit<CategoryRule, 'id'>) => Promise<void>;
   deleteCategoryRule: (id: string) => Promise<void>; reRunCategoryRules: () => Promise<void>;
   uploadImport: (file: File, sourceAccountId: string) => Promise<ImportJob>;
   saveAllocationDefaults: (rules: ProfitAllocationRule[]) => Promise<void>;
@@ -44,20 +47,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => { void refresh(); }, [refresh]);
   const updateTransaction = async (id: string, patch: Partial<Transaction>) => { try { const updated = await financeApi.updateTransaction(id, patch); setTransactions(p => p.map(x => x.id === id ? updated : x)); } catch (e) { reportError(e); throw e; } };
   const bulkCategorizeTransactions = async (ids: string[], categoryId: string, scope: TransactionScope, includedInProfit: boolean) => { try { const updated = await financeApi.bulkCategorize(ids, categoryId, scope, includedInProfit); setTransactions(p => p.map(x => updated.find(u => u.id === x.id) ?? x)); } catch (e) { reportError(e); throw e; } };
-  const markReviewed = async (id: string) => { try { const updated = await financeApi.markReviewed(id); setTransactions(p => p.map(x => x.id === id ? updated : x)); } catch (e) { reportError(e); throw e; } };
   const createCategoryRule = async (rule: Omit<CategoryRule, 'id'>) => { try { const created = await financeApi.createCategoryRule(rule); setCategoryRules(p => [...p, created]); } catch (e) { reportError(e); throw e; } };
   const updateCategoryRule = async (id: string, rule: Omit<CategoryRule, 'id'>) => { try { const updated = await financeApi.updateCategoryRule(id, rule); setCategoryRules(p => p.map(x => x.id === id ? updated : x)); } catch (e) { reportError(e); throw e; } };
   const deleteCategoryRule = async (id: string) => { try { await financeApi.deleteCategoryRule(id); setCategoryRules(p => p.filter(x => x.id !== id)); } catch (e) { reportError(e); throw e; } };
-  const reRunCategoryRules = async () => { try { const result = await financeApi.reRunCategoryRules(); if (result.updated) setTransactions(result.updated); else await refresh(); } catch (e) { reportError(e); } };
+  const reRunCategoryRules = async () => { try { await financeApi.reRunCategoryRules(); await refresh(); } catch (e) { reportError(e); throw e; } };
   const uploadImport = async (file: File, sourceAccountId: string) => {
     try {
       const job = await financeApi.uploadImport(file, sourceAccountId);
-      // Importing commits transactions server-side. Reload the canonical snapshot
-      // so the ledger, dashboard, review queue and audit feed update together.
+      // Upload only stages a validated preview. The user must explicitly confirm commit.
       await refresh();
       return job;
     } catch (e) { reportError(e); throw e; }
   };
+  const commitImport = async (id: string) => { try { await financeApi.commitImport(id); await refresh(); } catch (e) { reportError(e); throw e; } };
+  const revertImport = async (id: string) => { try { await financeApi.revertImport(id); await refresh(); } catch (e) { reportError(e); throw e; } };
+  const clearImportedData = async () => { try { await financeApi.clearImportedData(); await refresh(); } catch (e) { reportError(e); throw e; } };
+  const resetWorkspace = async () => { try { await financeApi.resetWorkspace(); await refresh(); } catch (e) { reportError(e); throw e; } };
+  const createManualTransaction = async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'sourceAccountId' | 'currency' | 'isManual'>) => { try { const created = await financeApi.createManualTransaction(transaction); setTransactions(p => [created, ...p]); } catch (e) { reportError(e); throw e; } };
+  const deleteManualTransaction = async (id: string) => { try { await financeApi.deleteManualTransaction(id); setTransactions(p => p.filter(t => t.id !== id)); } catch (e) { reportError(e); throw e; } };
   const saveAllocationDefaults = async (rules: ProfitAllocationRule[]) => { try { const saved = await financeApi.saveAllocationRules(rules); setAllocationRules(saved); } catch (e) { reportError(e); throw e; } };
   const addAsset = async (asset: Omit<Asset, 'id' | 'asOf' | 'currency'>) => { try { const created = await financeApi.addAsset(asset); setAssets(p => [...p, created]); } catch (e) { reportError(e); throw e; } };
   const updateAsset = async (id: string, asset: Partial<Asset>) => { try { const saved = await financeApi.updateAsset(id, asset); setAssets(p => p.map(x => x.id === id ? saved : x)); } catch (e) { reportError(e); throw e; } };
@@ -71,7 +78,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateBusinessProfile = async (profile: Partial<BusinessProfile>) => { try { setBusinessProfile(await financeApi.updateBusinessProfile(profile)); } catch (e) { reportError(e); throw e; } };
   const updateSettings = async (section: keyof SettingsDTO, payload: Record<string, unknown>) => { try { setSettings(await financeApi.updateSettings(section, payload)); } catch (e) { reportError(e); throw e; } };
   const toggleAccountStatus = async (id: string) => { const current = connectedAccounts.find(account => account.id === id); if (!current) return; try { const updated = await financeApi.updateAccountStatus(id, current.status !== 'connected'); setConnectedAccounts(accounts => accounts.map(account => account.id === id ? updated : account)); } catch (e) { reportError(e); throw e; } };
-  const value = useMemo(() => ({ activeTab, setActiveTab, businessProfile, connectedAccounts, categories, transactions, importJobs, categoryRules, allocationRules, assets, liabilities, holdings, settings, activityEvents, isLoading, apiError, refresh, isSearchOpen, setIsSearchOpen, isNotificationsOpen, setIsNotificationsOpen, isAiAssistantOpen, setIsAiAssistantOpen, updateTransaction, bulkCategorizeTransactions, markReviewed, createCategoryRule, updateCategoryRule, deleteCategoryRule, reRunCategoryRules, uploadImport, saveAllocationDefaults, addAsset, updateAsset, deleteAsset, addLiability, updateLiability, deleteLiability, addHolding, updateHolding, deleteHolding, updateBusinessProfile, updateSettings, toggleAccountStatus }), [activeTab, businessProfile, connectedAccounts, categories, transactions, importJobs, categoryRules, allocationRules, assets, liabilities, holdings, settings, activityEvents, isLoading, apiError, refresh, isSearchOpen, isNotificationsOpen, isAiAssistantOpen]);
+  const value = useMemo(() => ({ activeTab, setActiveTab, businessProfile, connectedAccounts, categories, transactions, importJobs, categoryRules, allocationRules, assets, liabilities, holdings, settings, activityEvents, isLoading, apiError, refresh, isSearchOpen, setIsSearchOpen, isNotificationsOpen, setIsNotificationsOpen, isAiAssistantOpen, setIsAiAssistantOpen, updateTransaction, bulkCategorizeTransactions, createManualTransaction, deleteManualTransaction, commitImport, revertImport, clearImportedData, resetWorkspace, createCategoryRule, updateCategoryRule, deleteCategoryRule, reRunCategoryRules, uploadImport, saveAllocationDefaults, addAsset, updateAsset, deleteAsset, addLiability, updateLiability, deleteLiability, addHolding, updateHolding, deleteHolding, updateBusinessProfile, updateSettings, toggleAccountStatus }), [activeTab, businessProfile, connectedAccounts, categories, transactions, importJobs, categoryRules, allocationRules, assets, liabilities, holdings, settings, activityEvents, isLoading, apiError, refresh, isSearchOpen, isNotificationsOpen, isAiAssistantOpen]);
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 };
 export const useFinance = () => { const value = useContext(FinanceContext); if (!value) throw new Error('useFinance must be used within a FinanceProvider'); return value; };

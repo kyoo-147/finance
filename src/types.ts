@@ -50,6 +50,11 @@ export interface Transaction {
   categorization?: TransactionCategorization;
   createdAt?: string;
   updatedAt?: string;
+  importJobId?: string;
+  notes?: string;
+  reconciliationStatus?: 'unmatched' | 'matched';
+  reconciledTransactionId?: string;
+  isManual?: boolean;
 }
 
 export type ImportJobStatus =
@@ -62,7 +67,8 @@ export type ImportJobStatus =
   | 'review_required'
   | 'committed'
   | 'failed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'reverted';
 
 export interface ImportJob {
   id: string;
@@ -75,6 +81,14 @@ export interface ImportJob {
   rowCount?: number;
   duplicateRows?: number;
   issuesCount?: number;
+  acceptedRows?: number;
+  rejectedRows?: number;
+  committedAt?: string;
+  revertedAt?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  summary?: Record<string, unknown> | null;
+  errorMessage?: string | null;
 }
 
 export interface CategoryRuleCondition {

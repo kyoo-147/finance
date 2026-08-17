@@ -32,6 +32,10 @@ export const SettingsPage: React.FC = () => {
     settings,
     updateSettings,
     categories,
+    transactions,
+    deleteManualTransaction,
+    clearImportedData,
+    resetWorkspace,
   } = useFinance();
 
   const [activeTab, setActiveTab] = useState<TabType>('general');
@@ -53,6 +57,7 @@ export const SettingsPage: React.FC = () => {
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setBizName(businessProfile.name);
@@ -96,7 +101,7 @@ export const SettingsPage: React.FC = () => {
         <div className="bg-white/10 backdrop-blur-md rounded-[14px] p-4 border border-white/15 text-white w-full sm:w-64 space-y-1">
           <div className="text-[10px] text-blue-100 font-semibold uppercase">Entity Profile</div>
           <div className="text-[18px] font-extrabold text-white truncate">{bizName}</div>
-          <div className="text-[11px] text-emerald-300 font-medium">Local-only service</div>
+          <div className="text-[11px] text-emerald-300 font-medium">Server-protected deployment</div>
         </div>
       </HeroBanner>
 
@@ -410,9 +415,9 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#F8FAFD] border border-[#E7EBF3]">
                 <div>
                   <div className="font-bold text-[#08123D] flex items-center gap-1.5">
-                    <Smartphone className="w-4 h-4 text-[#1547F5]" /> Local-only access
+                    <Smartphone className="w-4 h-4 text-[#1547F5]" /> Deployment access
                   </div>
-                  <div className="text-[11px] text-[#7E8AA8] mt-0.5">The service is available only on this computer.</div>
+                  <div className="text-[11px] text-[#7E8AA8] mt-0.5">The service access policy is controlled by the server deployment.</div>
                 </div>
                 <input
                   type="checkbox"
@@ -446,7 +451,16 @@ export const SettingsPage: React.FC = () => {
                 <button disabled={isRestoring} onClick={() => restoreInputRef.current?.click()} className="bg-white border border-[#F3D6C2] text-[#B45309] text-[11px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-orange-50 disabled:opacity-50 cursor-pointer">{isRestoring ? 'Restoring…' : 'Choose backup'}</button>
               </div>
               {backupMessage && <div role="status" className="text-[11px] text-[#475569] px-1">{backupMessage}</div>}
-              <p className="text-[11px] text-[#7E8AA8] px-1">No online account, password reset, or session tracking exists in this local-only version. Protect this Windows account and enable BitLocker where available.</p>
+              {recoveryMessage && <div role="status" className="text-[11px] text-[#475569] px-1">{recoveryMessage}</div>}
+              <div className="border-t border-[#E7EBF3] pt-4 space-y-2">
+                <div className="font-bold text-[#08123D]">Delete Manual Transaction</div>
+                {transactions.filter((transaction) => transaction.isManual).length === 0 ? <p className="text-[11px] text-[#7E8AA8]">No manual transactions.</p> : transactions.filter((transaction) => transaction.isManual).slice(0, 10).map((transaction) => <div key={transaction.id} className="flex items-center justify-between rounded-lg bg-white border border-[#E7EBF3] px-3 py-2"><span className="truncate text-[11px]">{transaction.occurredAt} · {transaction.description}</span><button onClick={() => { if (window.confirm('Delete this manual transaction?')) void deleteManualTransaction(transaction.id); }} className="text-[11px] font-semibold text-rose-700">Delete</button></div>)}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-[#E7EBF3] pt-4">
+                <button onClick={async () => { if (!window.confirm('Clear all imported transactions and mark their import history as reverted? Manual transactions, profile, categories, and allocation rules will remain.')) return; try { const result = await clearImportedData(); setRecoveryMessage('Imported data cleared.'); } catch {} }} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">Clear Imported Data</button>
+                <button onClick={async () => { if (window.prompt('Type RESET to reset the entire finance workspace.') !== 'RESET') return; try { await resetWorkspace(); setRecoveryMessage('Finance workspace reset.'); window.setTimeout(() => window.location.reload(), 500); } catch {} }} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-800">Reset Finance Workspace</button>
+              </div>
+              <p className="text-[11px] text-[#7E8AA8] px-1">The server deployment controls access. Keep verified backups and protect the deployment credentials.</p>
             </div>
           </div>
         )}
@@ -458,7 +472,7 @@ export const SettingsPage: React.FC = () => {
             <label className="block text-xs font-semibold uppercase text-slate-500">Description contains<input value={ruleKeyword} onChange={(e) => setRuleKeyword(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" /></label>
             <label className="block text-xs font-semibold uppercase text-slate-500">Category<select value={ruleCategory} onChange={(e) => setRuleCategory(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm">{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
             <label className="block text-xs font-semibold uppercase text-slate-500">Scope<select value={ruleScope} onChange={(e) => setRuleScope(e.target.value as 'business' | 'personal')} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"><option value="business">Business</option><option value="personal">Personal</option></select></label>
-            <div className="flex justify-end gap-2"><button onClick={() => setEditingRule(null)} className="rounded-lg px-3 py-2 text-sm">Cancel</button><button onClick={() => void updateCategoryRule(editingRule.id, { priority: editingRule.priority, enabled: true, conditions: [{ field: 'description', operator: 'contains', value: ruleKeyword }], action: { categoryId: ruleCategory, scope: ruleScope, includedInProfit: true } }).then(() => setEditingRule(null)).catch(() => undefined)} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Save rule</button></div>
+            <div className="flex justify-end gap-2"><button onClick={() => setEditingRule(null)} className="rounded-lg px-3 py-2 text-sm">Cancel</button><button onClick={() => void updateCategoryRule(editingRule.id, { priority: editingRule.priority, enabled: true, conditions: [{ field: 'description', operator: 'contains', value: ruleKeyword }], action: { categoryId: ruleCategory, scope: ruleScope, includedInProfit: ruleScope === 'business' } }).then(() => setEditingRule(null)).catch(() => undefined)} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Save rule</button></div>
           </div>
         </div>
       )}

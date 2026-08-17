@@ -1,58 +1,50 @@
 # QA acceptance report — Jerri Finance Portal
 
-**Review date:** 2026-08-15
+**Final engineering pass:** 2026-08-17
 
-## Current conclusion
+## Implemented
 
-The core backend, FE/BE round trips, and browser acceptance runner have been corrected and pass in the current environment. **Final acceptance is not signed off yet** because endpoint contract coverage, mobile/native startup, and several supporting UI flows remain incomplete.
+- Monthly reporting defaults to the latest transaction month and supports explicit month selection for Overview, Cash Flow, and Profit Allocation. Net Worth and Investments remain current-position views.
+- Financial year labels are calculated from `financialYearStartMonth`; July 2026 displays as FY 2026-27.
+- Review-required bank transactions remain `unknown`. Completing review requires an explicit scope, category, and profit-inclusion decision. There is no one-click Approve action.
+- Personal and unknown transactions cannot enter business profit, including through category rules, bulk updates, or rule re-runs.
+- Rule ordering is deterministic and rule re-run refreshes the canonical snapshot instead of replacing the ledger with only changed rows.
+- Stripe payouts are authoritative. Matching ING Stripe deposits are matched one-to-one and converted to transfers excluded from profit.
+- Added `Affiliate Marketing Income` and manual transaction create/edit/delete with integer cents, explicit classification, notes, audit events, and delete confirmation.
+- PDF imports stage first and require Preview → Confirm Import before committing.
+- Xero payslip and ING Orange Everyday parsing preserve/validate their required fields and reconcile before any transaction is committed.
+- Import history includes period, counts, totals, status, and revert time. Undo Import is atomic, batch-scoped, audited, and allows a reverted file to be imported again.
+- Added Clear Imported Data and Reset Finance Workspace recovery actions while preserving manual data for clear-imported.
+- Stable bank identity no longer depends on the source PDF hash, protecting overlapping/re-exported statements from duplicate rows.
+- Windows launcher now requires Node.js 24+, checks health, builds only when needed, and reports clear errors.
+- Optional Basic Auth and public deployment mode are available through `JERRI_AUTH_USER`, `JERRI_AUTH_PASSWORD`, and `JERRI_PUBLIC_MODE`; the Node service can remain bound to localhost behind Nginx.
 
 ## Validation
 
 ```text
 npm run lint         -> PASS
-npm run server:test  -> 21 passed, 0 failed
+npm run server:test  -> 26 passed, 0 failed
 npm run build        -> PASS
-npm run browser:e2e  -> PASS against an isolated database
+npm run browser:e2e  -> PASS
+node tests/api-contract.mjs -> 5 passed
+node tests/reconciliation-fixture-check.mjs -> PASS
 ```
 
-## Fixed in this iteration
+## Real fixture evidence
 
-- Asset/liability schema stores `category`; bootstrap and update preserve category after refresh/restart.
-- Import jobs store and return `duplicate_rows`.
-- `needs_review` transactions retain `scope: unknown` instead of being treated as personal.
-- Overview Tax Reserve uses the Tax allocation rule instead of a hard-coded 25%.
-- Overview/Cash Flow use liquid assets for the cash balance.
-- Cash Flow filters business/in-profit transactions and generates real forecast months for 3M/6M/12M selections.
-- Passive income uses `returnMtdMinor`, not portfolio value.
-- FE mutations propagate errors; forms and save flows no longer report failed requests as successful.
-- Category-rule update is wired from Settings UI → client → Express → SQLite.
-- Category-rule re-run is atomic and creates a `rule_applied` audit event for each changed transaction.
-- Regression tests cover asset/liability category round trips and unknown transaction scope.
-- The browser runner checks category round trips, transactions/rules/allocation/holdings/settings, backup/restore, restart, and degraded/error screenshots.
-- Older QA logs are compatibility pointers; this file is the only acceptance source.
+Real local customer fixtures were used for validation and were not committed to the public repository:
 
-## Open before final acceptance
+- Stripe July 2026: 23 rows, gross AUD 5,022.42, fees AUD 0.00, net AUD 5,022.42.
+- Xero: 2026-07-20 to 2026-08-02, payment 2026-08-04, gross AUD 720.00, PAYG AUD 128.00, super AUD 86.40, net AUD 592.00.
+- ING July 2026: 197 rows, opening AUD 578.10, closing AUD 1,214.19, net movement AUD 636.09.
+- Stripe/ING reconciliation: 23 matching pairs, 46 matched rows, 23 bank rows converted to transfers, July business income AUD 5,022.42 with zero duplicate bank revenue.
+- Corrupt/unreadable PDFs: rejected before commit with zero transactions.
 
-### P1
+## Remaining limitations
 
-1. There is no separate browser evidence for re-run semantics, although the backend is now atomic and audited.
-2. The endpoint contract suite is still narrow. `tests/api-contract.mjs` checks health, Stripe import, duplicate, invalid import, and allocation shape, but does not cover every mutation route.
-3. Error UX is not consistent for all fire-and-forget operations, especially source toggles and settings re-run; the global error banner exists but inline pending/error states are incomplete.
+- The public VPS requires a real domain and trusted TLS certificate for browser-trusted HTTPS. An IP-only deployment cannot obtain a normal trusted certificate; do not use plain HTTP for real customer financial data.
+- The current deployment is single-workspace. Multi-tenant customer isolation and user/session management are not implemented.
+- Live bank sync, OAuth, cloud sync, and automatic scheduled imports remain out of scope.
+- Browser E2E still does not automate every Global Search, Notification Drawer, mobile viewport, or Windows shortcut interaction.
 
-### P2 / boundaries
-
-4. The browser runner does not fully cover Global Search, Notification Drawer, AI assistant refresh, CSV download, the current mobile matrix, or the `.cmd` launcher.
-5. The AI assistant provides local deterministic explanations; it is not an AI backend or financial adviser.
-6. Native Windows launcher/shortcut/manual-startup proof is outside the CDP runner.
-7. Cloud sync, bank OAuth/live feeds, and online accounts are outside the local-only V1 scope.
-
-## Evidence
-
-- Server tests: `server/*.test.mjs`
-- Browser runner: `scripts/browser-e2e.mjs`
-- Screenshots: `tests/artifacts/ui-e2e/`
-- FE/BE adapter: `src/api/client.ts`, `src/context/FinanceContext.tsx`
-
-Do not call the product “100% complete” until P1 items are closed and browser/mobile/native boundaries are classified with new evidence.
-
-Browser screenshots are generated under `tests/artifacts/ui-e2e/` locally and intentionally ignored from GitHub because they can contain financial fixture data.
+This report does not claim production-ready public customer hosting until trusted HTTPS, authentication deployment configuration, and tenant isolation are complete.

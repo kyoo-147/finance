@@ -45,16 +45,21 @@ export const financeApi = {
   updateTransaction: (id: string, patch: Partial<Transaction>) => request<Transaction>(`/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   bulkCategorize: (transactionIds: string[], categoryId: string, scope: Transaction['scope'], includedInProfit: boolean) =>
     request<Transaction[]>('/transactions/bulk-categorize', { method: 'POST', body: JSON.stringify({ transactionIds, categoryId, scope, includedInProfit }) }),
-  markReviewed: (id: string) => request<Transaction>(`/transactions/${id}/review`, { method: 'POST' }),
   createCategoryRule: (rule: Omit<CategoryRule, 'id'>) => request<CategoryRule>('/category-rules', { method: 'POST', body: JSON.stringify(rule) }),
   updateCategoryRule: (id: string, rule: Omit<CategoryRule, 'id'>) => request<CategoryRule>(`/category-rules/${id}`, { method: 'PATCH', body: JSON.stringify(rule) }),
   deleteCategoryRule: (id: string) => request<void>(`/category-rules/${id}`, { method: 'DELETE' }),
   reRunCategoryRules: () => request<{ updated?: Transaction[] }>('/category-rules/apply', { method: 'POST' }),
+  createManualTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'sourceAccountId' | 'currency' | 'isManual'>) => request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(transaction) }),
+  deleteManualTransaction: (id: string) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),
   uploadImport: (file: File, sourceAccountId: string) => {
     const data = new FormData(); data.append('file', file); data.append('sourceAccountId', sourceAccountId);
     return request<ImportJob>('/imports', { method: 'POST', body: data });
   },
-  getImport: (id: string) => request<ImportJob>(`/imports/${id}`),
+  getImport: (id: string) => request<ImportJob & { rows: Array<Record<string, unknown>> }>(`/imports/${id}`),
+  commitImport: (id: string) => request<ImportJob>(`/imports/${id}/commit`, { method: 'POST' }),
+  revertImport: (id: string) => request<ImportJob>(`/imports/${id}/revert`, { method: 'POST' }),
+  clearImportedData: () => request<{ cleared: number }>('/data/clear-imported', { method: 'POST' }),
+  resetWorkspace: () => request<{ reset: true }>('/workspace/reset', { method: 'POST' }),
   saveAllocationRules: (rules: ProfitAllocationRule[]) => request<ProfitAllocationRule[]>('/allocation-rules', { method: 'PATCH', body: JSON.stringify({ rules }) }),
   addAsset: (asset: Omit<Asset, 'id' | 'asOf' | 'currency'>) => request<Asset>('/assets', { method: 'POST', body: JSON.stringify(asset) }),
   updateAsset: (id: string, asset: Partial<Asset>) => request<Asset>(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(asset) }),

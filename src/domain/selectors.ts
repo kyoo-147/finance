@@ -1,3 +1,22 @@
+export function selectLatestTransactionMonth(transactions: Transaction[]): string | null {
+  return transactions.map((t) => t.occurredAt.slice(0, 7)).sort().at(-1) ?? null;
+}
+
+export function selectMonth(transactions: Transaction[], month: string | null): Transaction[] {
+  return month ? transactions.filter((t) => t.occurredAt.startsWith(month)) : transactions;
+}
+
+export function financialYearLabel(month: string | null, startMonth = 7): string {
+  const year = month ? Number(month.slice(0, 4)) : new Date().getFullYear();
+  const monthNumber = month ? Number(month.slice(5, 7)) : new Date().getMonth() + 1;
+  const startYear = monthNumber >= startMonth ? year : year - 1;
+  return `FY ${startYear}-${String(startYear + 1).slice(-2)}`;
+}
+
+function monthly(transactions: Transaction[], month?: string | null): Transaction[] {
+  return selectMonth(transactions, month ?? null);
+}
+
 import {
   Transaction,
   Asset,
@@ -7,14 +26,14 @@ import {
   Category,
 } from '../types';
 
-export function selectTotalBusinessIncome(transactions: Transaction[]): number {
-  return transactions
+export function selectTotalBusinessIncome(transactions: Transaction[], month?: string | null): number {
+  return monthly(transactions, month)
     .filter((t) => t.type === 'income' && t.scope === 'business' && t.includedInProfit && t.duplicateStatus !== 'duplicate')
     .reduce((sum, t) => sum + Math.abs(t.amountMinor), 0);
 }
 
-export function selectStripeIncome(transactions: Transaction[]): number {
-  return transactions
+export function selectStripeIncome(transactions: Transaction[], month?: string | null): number {
+  return monthly(transactions, month)
     .filter(
       (t) =>
         t.type === 'income' &&
@@ -26,14 +45,14 @@ export function selectStripeIncome(transactions: Transaction[]): number {
     .reduce((sum, t) => sum + Math.abs(t.amountMinor), 0);
 }
 
-export function selectEmploymentIncome(transactions: Transaction[]): number {
-  return transactions
+export function selectEmploymentIncome(transactions: Transaction[], month?: string | null): number {
+  return monthly(transactions, month)
     .filter((t) => t.type === 'income' && t.scope === 'personal' && t.duplicateStatus !== 'duplicate')
     .reduce((sum, t) => sum + Math.abs(t.amountMinor), 0);
 }
 
-export function selectBusinessExpenses(transactions: Transaction[]): number {
-  return transactions
+export function selectBusinessExpenses(transactions: Transaction[], month?: string | null): number {
+  return monthly(transactions, month)
     .filter(
       (t) =>
         t.type === 'expense' &&
@@ -44,14 +63,14 @@ export function selectBusinessExpenses(transactions: Transaction[]): number {
     .reduce((sum, t) => sum + Math.abs(t.amountMinor), 0);
 }
 
-export function selectNetProfit(transactions: Transaction[]): number {
-  const income = selectTotalBusinessIncome(transactions);
-  const expenses = selectBusinessExpenses(transactions);
+export function selectNetProfit(transactions: Transaction[], month?: string | null): number {
+  const income = selectTotalBusinessIncome(transactions, month);
+  const expenses = selectBusinessExpenses(transactions, month);
   return income - expenses;
 }
 
-export function selectTaxReserve(transactions: Transaction[], taxBps: number = 2500): number {
-  const netProfit = selectNetProfit(transactions);
+export function selectTaxReserve(transactions: Transaction[], taxBps: number = 2500, month?: string | null): number {
+  const netProfit = selectNetProfit(transactions, month);
   if (netProfit <= 0) return 0;
   return Math.round((netProfit * taxBps) / 10000);
 }

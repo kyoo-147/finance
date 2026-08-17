@@ -9,14 +9,18 @@ import { useFinance } from '../context/FinanceContext';
 import { HeroBanner } from '../components/common/HeroBanner';
 import { AreaLineChart } from '../components/common/Charts';
 import { formatMoney } from '../domain/formatters';
-import { selectTotalBusinessIncome, selectBusinessExpenses, selectLiquidAssets } from '../domain/selectors';
+import { selectTotalBusinessIncome, selectBusinessExpenses, selectLiquidAssets, selectLatestTransactionMonth } from '../domain/selectors';
 
 export const CashFlowPage: React.FC = () => {
   const { transactions, assets } = useFinance();
   const [forecastMonths, setForecastMonths] = useState(3);
+  const latestMonth = selectLatestTransactionMonth(transactions);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const reportMonth = selectedMonth ?? latestMonth;
+  const months = Array.from(new Set(transactions.map((t) => t.occurredAt.slice(0, 7)))).sort().reverse();
 
-  const totalIncome = selectTotalBusinessIncome(transactions);
-  const totalExpenses = selectBusinessExpenses(transactions);
+  const totalIncome = selectTotalBusinessIncome(transactions, reportMonth);
+  const totalExpenses = selectBusinessExpenses(transactions, reportMonth);
   const netCashFlow = totalIncome - totalExpenses;
 
   const endingCash = selectLiquidAssets(assets);
@@ -48,7 +52,9 @@ export const CashFlowPage: React.FC = () => {
         title="Cash Position & Runway"
         subtitle="Monitor operating liquidity, track cash burn, and project forward cash runway."
         compact
-      />
+      >
+        <label className="text-xs text-white">Reporting month<select value={reportMonth ?? ''} onChange={(e) => setSelectedMonth(e.target.value || null)} className="ml-2 rounded bg-white/15 px-2 py-1 text-xs"><option value="">Latest month</option>{months.map((month) => <option key={month} value={month}>{month}</option>)}</select></label>
+      </HeroBanner>
 
       {/* Hierarchy Step 1: Current Cash -> Runway -> Net Surplus */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

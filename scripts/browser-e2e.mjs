@@ -89,7 +89,11 @@ async function fileInput(file) {
 async function upload(account, file, marker) {
   await selectAccount(account);
   await fileInput(file);
-  await waitFor(`document.body.innerText.includes('Completed') && document.body.innerText.includes(${JSON.stringify(marker)})`, `${account} import`);
+  await waitFor(`document.body.innerText.includes('Preview & Confirm')`, `${account} import preview`);
+  await click('Preview & Confirm');
+  await waitFor(`document.body.innerText.includes('Import Preview')`, `${account} preview dialog`);
+  await click('Confirm Import');
+  await waitFor(`document.body.innerText.includes('Completed') && document.body.innerText.includes(${JSON.stringify(marker)})`, `${account} import commit`);
 }
 async function stopServer() {
   if (!server || server.exitCode !== null) return;
@@ -142,7 +146,6 @@ try {
   await evaluate(`document.querySelectorAll('table input[type=checkbox]')[1]?.click()`);
   await click('Set Software');
   await waitFor(`document.body.innerText.includes('Showing')`, 'bulk categorize');
-  await click('Approve');
   const reviewed = await evaluate(`fetch('/api/bootstrap').then(r=>r.json()).then(s=>s.transactions.some(t=>t.reviewStatus==='reviewed'))`);
   assert.equal(reviewed, true, 'review action did not persist');
   await evaluate(`document.querySelector('button[title="Edit"]')?.click()`);

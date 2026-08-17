@@ -11,13 +11,17 @@ import { useFinance } from '../context/FinanceContext';
 import { HeroBanner } from '../components/common/HeroBanner';
 import { DonutChart } from '../components/common/Charts';
 import { formatMoney, formatPercent } from '../domain/formatters';
-import { selectNetProfit, selectCalculatedAllocations } from '../domain/selectors';
+import { selectNetProfit, selectCalculatedAllocations, selectLatestTransactionMonth } from '../domain/selectors';
 import { ProfitAllocationRule } from '../types';
 
 export const AllocationPage: React.FC = () => {
   const { transactions, allocationRules, saveAllocationDefaults } = useFinance();
+  const latestMonth = selectLatestTransactionMonth(transactions);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const reportMonth = selectedMonth ?? latestMonth;
+  const months = Array.from(new Set(transactions.map((t) => t.occurredAt.slice(0, 7)))).sort().reverse();
 
-  const netProfit = selectNetProfit(transactions);
+  const netProfit = selectNetProfit(transactions, reportMonth);
   const [rulesDraft, setRulesDraft] = useState<ProfitAllocationRule[]>(allocationRules);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -70,7 +74,9 @@ export const AllocationPage: React.FC = () => {
         title="Profit Allocation"
         subtitle="Distribute Net Operating Profit into tax reserves, buffer, and owner dividend accounts."
         compact
-      />
+      >
+        <label className="text-xs text-white">Reporting month<select value={reportMonth ?? ''} onChange={(e) => setSelectedMonth(e.target.value || null)} className="ml-2 rounded bg-white/15 px-2 py-1 text-xs"><option value="">Latest month</option>{months.map((month) => <option key={month} value={month}>{month}</option>)}</select></label>
+      </HeroBanner>
 
       {/* Main Allocation Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">

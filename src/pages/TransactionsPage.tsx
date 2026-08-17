@@ -13,8 +13,9 @@ import {
 import { useFinance } from '../context/FinanceContext';
 import { HeroBanner } from '../components/common/HeroBanner';
 import { formatMoney, formatDate } from '../domain/formatters';
-import { Transaction, TransactionScope } from '../types';
+import { Transaction, TransactionScope, TransactionType } from '../types';
 import { selectCategoryBreakdown } from '../domain/selectors';
+import { ManualTransactionModal } from '../components/common/ManualTransactionModal';
 
 export const TransactionsPage: React.FC = () => {
   const {
@@ -23,8 +24,8 @@ export const TransactionsPage: React.FC = () => {
     connectedAccounts,
     updateTransaction,
     bulkCategorizeTransactions,
-    markReviewed,
     createCategoryRule,
+    deleteManualTransaction,
   } = useFinance();
 
   // Search & Filter state
@@ -41,6 +42,8 @@ export const TransactionsPage: React.FC = () => {
   const [ruleKeyword, setRuleKeyword] = useState('');
   const [ruleCategory, setRuleCategory] = useState('');
   const [ruleScope, setRuleScope] = useState<TransactionScope>('business');
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualDraft, setManualDraft] = useState({ occurredAt: new Date().toISOString().slice(0, 10), description: '', amount: '', type: 'expense' as TransactionType, scope: 'business' as TransactionScope, categoryId: 'software', includedInProfit: true, notes: '' });
 
   // Filter logic
   const filteredTransactions = transactions.filter((t) => {
@@ -84,7 +87,7 @@ export const TransactionsPage: React.FC = () => {
       priority: 50,
       enabled: true,
       conditions: [{ field: 'description', operator: 'contains', value: ruleKeyword }],
-      action: { categoryId: ruleCategory, scope: ruleScope, includedInProfit: true },
+      action: { categoryId: ruleCategory, scope: ruleScope, includedInProfit: ruleScope === 'business' },
     });
     setRuleModalTxn(null);
   };
@@ -119,6 +122,7 @@ export const TransactionsPage: React.FC = () => {
         subtitle="Audited record of all connected statement lines, categorizations, and profit inclusion."
         compact
       >
+        <button onClick={() => setManualOpen(true)} className="bg-white hover:bg-slate-50 text-slate-800 font-medium text-[12px] px-3.5 py-1.5 rounded-[8px] border border-slate-300 transition-all cursor-pointer">+ Manual transaction</button>
         <button
           onClick={exportToCsv}
           className="bg-slate-800 hover:bg-slate-700 text-white font-medium text-[12px] px-3.5 py-1.5 rounded-[8px] border border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
@@ -306,7 +310,7 @@ export const TransactionsPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3">
                         <span className="text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                          {txn.scope === 'business' ? 'Business' : 'Personal'}
+                          {txn.scope === 'business' ? 'Business' : txn.scope === 'personal' ? 'Personal' : 'Unknown — review required'}
                         </span>
                       </td>
                       <td className="py-3 px-3">
@@ -331,14 +335,6 @@ export const TransactionsPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                          {txn.reviewStatus === 'needs_review' && (
-                            <button
-                              onClick={() => markReviewed(txn.id)}
-                              className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-medium px-2.5 py-0.5 rounded transition-all cursor-pointer"
-                            >
-                              Approve
-                            </button>
-                          )}
                           <button
                             onClick={() => openCreateRuleModal(txn)}
                             className="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer"
@@ -353,6 +349,7 @@ export const TransactionsPage: React.FC = () => {
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+                          {txn.isManual && <button onClick={() => { if (window.confirm('Delete this manual transaction?')) void deleteManualTransaction(txn.id); }} className="p-1 text-slate-400 hover:text-rose-700 rounded cursor-pointer" title="Delete manual transaction">×</button>}
                         </div>
                       </td>
                     </tr>
@@ -407,6 +404,8 @@ export const TransactionsPage: React.FC = () => {
         </div>
       </div>
 
+      {manualOpen && <ManualTransactionModal onClose={() => setManualOpen(false)} />}
+
       {/* Edit Modal */}
       {editingTxn && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
@@ -419,6 +418,7 @@ export const TransactionsPage: React.FC = () => {
             </div>
 
             <div className="space-y-3">
+              {editingTxn.isManual && <div className="grid grid-cols-3 gap-3"><label className="text-[11px] font-medium text-slate-500 uppercase">Date<input type="date" value={editingTxn.occurredAt} onChange={(e) => setEditingTxn({ ...editingTxn, occurredAt: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] text-slate-900 mt-1" /></label><label className="text-[11px] font-medium text-slate-500 uppercase">Amount<input type="number" step="0.01" value={(Math.abs(editingTxn.amountMinor) / 100).toFixed(2)} onChange={(e) => setEditingTxn({ ...editingTxn, amountMinor: Math.round(Number(e.target.value) * 100) * (editingTxn.type === 'expense' ? -1 : 1) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] text-slate-900 mt-1" /></label><label className="text-[11px] font-medium text-slate-500 uppercase">Type<select value={editingTxn.type} onChange={(e) => setEditingTxn({ ...editingTxn, type: e.target.value as TransactionType })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] text-slate-900 mt-1"><option value="income">Income</option><option value="expense">Expense</option><option value="transfer">Transfer</option></select></label></div>}
               <div>
                 <label className="text-[11px] font-medium text-slate-500 uppercase">Description</label>
                 <input
@@ -437,6 +437,7 @@ export const TransactionsPage: React.FC = () => {
                     onChange={(e) => setEditingTxn({ ...editingTxn, scope: e.target.value as TransactionScope })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[12.5px] text-slate-900 mt-1 outline-none"
                   >
+                    <option value="unknown">Unknown — review required</option>
                     <option value="business">Business</option>
                     <option value="personal">Personal</option>
                   </select>
@@ -459,6 +460,9 @@ export const TransactionsPage: React.FC = () => {
               </div>
             </div>
 
+            <label className="flex items-center gap-2 text-xs text-slate-700"><input type="checkbox" checked={editingTxn.includedInProfit} disabled={editingTxn.scope !== 'business'} onChange={(e) => setEditingTxn({ ...editingTxn, includedInProfit: e.target.checked })} /> Include in business profit</label>
+            {editingTxn.isManual && <label className="block text-[11px] font-medium text-slate-500 uppercase">Notes<textarea value={editingTxn.notes ?? ''} onChange={(e) => setEditingTxn({ ...editingTxn, notes: e.target.value })} className="mt-1 w-full rounded-lg border px-3 py-1.5 text-sm" rows={2} /></label>}
+
             <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
               <button
                 onClick={() => setEditingTxn(null)}
@@ -468,7 +472,7 @@ export const TransactionsPage: React.FC = () => {
               </button>
               <button
                 onClick={async () => {
-                  try { await updateTransaction(editingTxn.id, editingTxn); setEditingTxn(null); } catch { /* global error banner is shown by the context */ }
+                  try { await updateTransaction(editingTxn.id, { ...editingTxn, reviewStatus: editingTxn.scope === 'unknown' ? 'needs_review' : 'reviewed', includedInProfit: editingTxn.scope === 'business' && editingTxn.includedInProfit }); setEditingTxn(null); } catch { /* global error banner is shown by the context */ }
                 }}
                 className="px-3.5 py-1.5 text-[12px] font-semibold bg-slate-900 text-white hover:bg-slate-800 rounded-lg"
               >

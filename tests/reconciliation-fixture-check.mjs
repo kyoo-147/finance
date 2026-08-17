@@ -1,10 +1,13 @@
 /** Verifies that the immutable test expectations still match the supplied Stripe export. */
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const expected = JSON.parse(await readFile(resolve('tests/fixtures/expected-reconciliation.json'), 'utf8'));
-const raw = await readFile(resolve('..', expected.stripe_july_2026.source_file), 'utf8');
+const sourcePath = resolve('..', expected.stripe_july_2026.source_file);
+if (!existsSync(sourcePath)) { console.log('SKIP  Private Stripe source fixture is not present; no public fixture was committed.'); process.exit(0); }
+const raw = await readFile(sourcePath, 'utf8');
 const lines = raw.trim().split(/\r?\n/);
 const headers = lines.shift().replaceAll('"', '').split(',');
 const rows = lines.map((line) => {

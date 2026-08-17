@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   TrendingUp,
   CreditCard,
@@ -25,6 +25,7 @@ import {
   selectPortfolioValue,
   selectLiquidAssets,
   selectTaxReserve,
+  selectLatestTransactionMonth,
 } from '../domain/selectors';
 
 export const OverviewPage: React.FC = () => {
@@ -37,14 +38,17 @@ export const OverviewPage: React.FC = () => {
     holdings,
     activityEvents,
     setActiveTab,
-    markReviewed,
   } = useFinance();
 
-  const totalIncome = selectTotalBusinessIncome(transactions);
-  const businessExpenses = selectBusinessExpenses(transactions);
-  const netProfit = selectNetProfit(transactions);
+  const latestMonth = selectLatestTransactionMonth(transactions);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const reportMonth = selectedMonth ?? latestMonth;
+  const months = Array.from(new Set(transactions.map((t) => t.occurredAt.slice(0, 7)))).sort().reverse();
+  const totalIncome = selectTotalBusinessIncome(transactions, reportMonth);
+  const businessExpenses = selectBusinessExpenses(transactions, reportMonth);
+  const netProfit = selectNetProfit(transactions, reportMonth);
   const taxBps = allocationRules.find((rule) => rule.name.toLowerCase().includes('tax'))?.percentageBps ?? 2500;
-  const taxReserve = selectTaxReserve(transactions, taxBps);
+  const taxReserve = selectTaxReserve(transactions, taxBps, reportMonth);
   const reviewCount = selectNeedsReviewCount(transactions);
 
   const netWorth = selectNetWorth(assets, liabilities);
@@ -87,6 +91,7 @@ export const OverviewPage: React.FC = () => {
         compact
       >
         <div className="flex items-center gap-3 bg-slate-800/80 rounded-[12px] px-3.5 py-2 border border-slate-700/60 text-white">
+          <label className="text-[10px] text-slate-300 uppercase tracking-wide">Reporting month<select value={reportMonth ?? ''} onChange={(e) => setSelectedMonth(e.target.value || null)} className="ml-2 rounded bg-slate-700 px-2 py-1 text-[11px] text-white"><option value="">Latest month</option>{months.map((month) => <option key={month} value={month}>{month}</option>)}</select></label>
           <div className="text-right">
             <div className="text-[10px] text-slate-300 font-medium uppercase tracking-wide">Review Status</div>
             <div className="text-[13px] font-bold text-emerald-400">{reviewCount} items pending</div>
@@ -235,10 +240,10 @@ export const OverviewPage: React.FC = () => {
                       </td>
                       <td className="py-3 text-right whitespace-nowrap">
                         <button
-                          onClick={() => markReviewed(txn.id)}
+                          onClick={() => setActiveTab('transactions')}
                           className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-medium px-3 py-1 rounded-[6px] transition-all cursor-pointer shadow-xs"
                         >
-                          Approve
+                          Review details
                         </button>
                       </td>
                     </tr>

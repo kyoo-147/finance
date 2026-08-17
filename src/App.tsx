@@ -14,9 +14,11 @@ import { NetWorthPage } from './pages/NetWorthPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { Search, Bell, Sparkles } from 'lucide-react';
+import { financialYearLabel, selectLatestTransactionMonth } from './domain/selectors';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, setIsSearchOpen, setIsNotificationsOpen, setIsAiAssistantOpen, businessProfile, isLoading, apiError, refresh } = useFinance();
+  const { activeTab, setIsSearchOpen, setIsNotificationsOpen, setIsAiAssistantOpen, businessProfile, transactions, isLoading, apiError, refresh } = useFinance();
+  const financialYear = financialYearLabel(selectLatestTransactionMonth(transactions), businessProfile.financialYearStartMonth || 7);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -55,7 +57,7 @@ const MainLayout: React.FC = () => {
             </div>
             <span className="text-[#C1C9D9] font-light">/</span>
             <span className="text-[11.5px] font-medium text-[#7E8AA8] bg-[#F4F7FF] px-2.5 py-0.5 rounded-md border border-[#E2E8F0]">
-              FY 2025-26
+              {financialYear}
             </span>
           </div>
 

@@ -6,4 +6,7 @@ export const config = Object.freeze({
   dataDir: path.resolve(process.env.JERRI_DATA_DIR ?? 'data'),
   databaseFile: path.resolve(process.env.JERRI_DATA_DIR ?? 'data', 'jerri-finance.sqlite'),
   uploadLimitBytes: 10 * 1024 * 1024,
+  authUser: process.env.JERRI_AUTH_USER ?? '',
+  authPassword: process.env.JERRI_AUTH_PASSWORD ?? '',
+  publicMode: process.env.JERRI_PUBLIC_MODE === 'true',
 });

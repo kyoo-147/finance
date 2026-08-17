@@ -66,3 +66,9 @@ npm run browser:e2e
 ```
 
 The runner uses Chrome/CDP and an isolated SQLite database. It covers transactions, rules, allocation, holdings, settings, backup/restore, restart persistence, degraded/error states, and screenshots. The consolidated result is maintained only in `QA-ACCEPTANCE-REPORT.md`.
+
+## Import lifecycle
+
+Every import follows: **Select source → Upload → Parse/validate → Preview → Confirm Import → Commit**. Upload alone must not create ledger transactions. A committed batch can be undone through `POST /api/imports/:id/revert`; the import history remains and the batch can be uploaded again after reversion.
+
+Manual transactions use `POST /api/transactions` and may be edited or deleted only through their manual transaction flow. Imported transactions always retain their `import_job_id`.

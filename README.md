@@ -34,3 +34,9 @@ The active database is stored at `data/jerri-finance.sqlite`. All monetary value
 - `npm run build` — production build.
 - `npm run server:test` — regression tests for PDF/CSV imports, financial integrity, SQLite atomicity, backup/restore, and persistence.
 - `npm run browser:e2e` — full Chrome/CDP acceptance run against an isolated database. Chrome must run with remote debugging on `:9222`; the runner starts the local server and writes screenshots to `tests/artifacts/ui-e2e/`.
+
+## Protected public deployment
+
+For a VPS deployment, keep Node bound to `127.0.0.1` and place Nginx in front of it. Set `JERRI_PUBLIC_MODE=true`, `JERRI_AUTH_USER`, and `JERRI_AUTH_PASSWORD` in the service environment. The health endpoint then reports `public-protected` and all portal/API routes require Basic Auth.
+
+Basic Auth must be used behind trusted HTTPS. Do not expose financial data or backup/restore endpoints over plain HTTP. A real domain and trusted TLS certificate are required for a client-facing deployment.

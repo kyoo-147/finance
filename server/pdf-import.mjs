@@ -83,7 +83,7 @@ function readStatement(pages, contentHash) {
       if (priorBalance !== null && priorBalance + amountMinor !== balanceMinor) throw asError(`ING statement did not reconcile at ${dateItem.text} (${description}); no data was imported.`);
       priorBalance = balanceMinor;
       const occurredOn = isoDate(dateItem.text);
-      records.push({ __row: records.length + 1, Date: occurredOn, Description: description, Amount: amountItem.text, 'Transaction ID': `ing:${sha256(Buffer.from(`${contentHash}|${occurredOn}|${description}|${amountItem.text}|${balanceItem.text}`)).slice(0, 24)}` });
+      records.push({ __row: records.length + 1, Date: occurredOn, Description: description, Amount: amountItem.text, 'Transaction ID': `ing:${sha256(Buffer.from(`${occurredOn}|${description}|${amountItem.text}`)).slice(0, 24)}` });
     }
   }
   if (!records.length || priorBalance === null) throw asError('No transaction rows were found in this ING statement.');

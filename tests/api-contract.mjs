@@ -59,6 +59,10 @@ await test('Stripe July CSV imports exact minor-unit totals', async () => {
   assert.equal(summary.grossMinor ?? summary.gross_minor, expected.stripe_july_2026.gross_minor);
   assert.equal(summary.feeMinor ?? summary.fee_minor, expected.stripe_july_2026.fee_minor);
   assert.equal(summary.netMinor ?? summary.net_minor, expected.stripe_july_2026.net_minor);
+  assert.equal(result.status, 'review_required', 'upload must return a reviewable preview');
+  const committed = await request(`/imports/${result.id}/commit`, { method: 'POST' });
+  assert.equal(committed.response.status, 200, committed.body);
+  assert.equal(committed.json?.status, 'committed');
 });
 
 await test('same Stripe report is idempotent', async () => {
