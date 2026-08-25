@@ -4,7 +4,7 @@
 
 ## Execution result
 
-As of the fourth independent adversarial pass on 2026-08-25, the original 58 Windows-executable cases plus 56 second-pass, 17 third-pass, and 5 fourth-pass plus 1 fifth-pass case pass: **137/137 Windows-executable cases**. The tracked matrix now contains **138 cases** total. QUA-06 and QUA-07 remain UNVERIFIED because they require macOS signing/notarization and Apple Silicon/Intel targets. The macOS last-window decision is unit-tested but is not counted as real Mac execution. Evidence is recorded in [`QA_ACCEPTANCE_REPORT.md`](QA_ACCEPTANCE_REPORT.md) and [`ADVERSARIAL_QA_MATRIX.md`](ADVERSARIAL_QA_MATRIX.md).
+As of the fourth independent adversarial pass on 2026-08-25, the original 58 Windows-executable cases plus 56 second-pass, 17 third-pass, and 5 fourth-pass plus 1 fifth-pass case pass: **137/137 Windows-executable cases**. The tracked matrix now contains **139 cases** total. QUA-06 and QUA-07 remain UNVERIFIED because they require macOS signing/notarization and Apple Silicon/Intel targets. The macOS last-window decision is unit-tested but is not counted as real Mac execution. Evidence is recorded in [`QA_ACCEPTANCE_REPORT.md`](QA_ACCEPTANCE_REPORT.md) and [`ADVERSARIAL_QA_MATRIX.md`](ADVERSARIAL_QA_MATRIX.md).
 
 A test is PASS only when the visible UI, persisted SQLite state, and expected financial result agree. A green parser test alone is not end-to-end proof. Unsupported platform claims remain explicitly unverified.
 
