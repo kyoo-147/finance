@@ -11,6 +11,12 @@ A private Mac-first finance dashboard built around Jerri's monthly Stripe, Xero,
 - [`analysis/QA_ACCEPTANCE_REPORT.md`](analysis/QA_ACCEPTANCE_REPORT.md)
 - [`analysis/ADVERSARIAL_QA_MATRIX.md`](analysis/ADVERSARIAL_QA_MATRIX.md)
 
+## Vietnamese product documents
+
+- [`docs/JERRI_USER_GUIDE_VI.md`](docs/JERRI_USER_GUIDE_VI.md)
+- [`docs/JERRI_PRODUCT_FUNCTIONS_VI.md`](docs/JERRI_PRODUCT_FUNCTIONS_VI.md)
+
+## Development
 ## Development
 
 Requires Node.js 24 for domain tests and current npm.
