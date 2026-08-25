@@ -24,8 +24,8 @@ This does not mean “all platforms are proven.” A signed/notarized macOS DMG 
 - Axe-core WCAG scan across empty/populated Dashboard, Transactions, bulk-review selection states, Settings, transaction dialog, and import dialog: **0 violations after fixes**.
 - Synthetic fixture regeneration is byte-for-byte deterministic against the pre-run SHA-256 inventory.
 - Fresh package ASAR runtime files match the tested source files by SHA-256.
-- Final unpacked executable SHA-256: `5a2910a401833195167a3b39f0742221aaf3439dba181e05507d8d5acf700c96`.
-- Final `app.asar` SHA-256: `76e23879de8572ddd86c32db390b9353c1150cc25a81daa0096d22a501c785fa`.
+- Final unpacked executable SHA-256: `fccbcc1553c3e76edc21c9672714798ef02aeb708aab13624f2292ec23d427ee`.
+- Final `app.asar` SHA-256: `82344187f6f3b71169585605ca69fd0851b09fa5f02cd45686d6a1a4ecb2e6b0`.
 - Electron fuses: RunAsNode disabled, NODE_OPTIONS disabled, ASAR integrity enabled, only-load-ASAR enabled. CLI inspect and file-protocol privileges remain enabled because Playwright/package loading requires them in the current architecture.
 - Windows Authenticode status: **NOT SIGNED**.
 - Node coverage: `electron/importers.mjs` and `electron/store.mjs` are **100% lines/functions**; branch coverage is **84.27%** and **80.58%**, respectively.
