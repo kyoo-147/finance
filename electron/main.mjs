@@ -47,6 +47,8 @@ else{
     handle('delete-transaction',id=>requireStore().deleteTransaction(id));
     handle('dashboard',month=>requireStore().dashboard(month));
     handle('save-settings',input=>requireStore().saveSettings(input));
+    handle('add-category',name=>requireStore().addCategory(name));
+    handle('delete-category',name=>requireStore().deleteCategory(name));
     handle('save-snapshot',input=>requireStore().saveSnapshot(input));
     handle('snapshot-for',month=>requireStore().snapshotFor(month));
     handle('allocation-for',month=>requireStore().allocationFor(month));
