@@ -1,41 +1,102 @@
 {
-  "name": "react-example",
+  "name": "jerri-finance-portal",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A private, simple finance dashboard for Jerri",
+  "author": "Bui Minh Cuong",
   "type": "module",
+  "main": "electron/main.mjs",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit",
-    "server": "node --experimental-sqlite server/index.mjs",
-    "server:test": "node --experimental-sqlite --test server/**/*.test.mjs",
-    "browser:e2e": "node scripts/browser-e2e.mjs"
+    "dev": "vite --port 1420",
+    "electron:dev": "concurrently -k \"npm:dev\" \"wait-on http://localhost:1420 && cross-env VITE_DEV_SERVER_URL=http://localhost:1420 electron electron/main.mjs\"",
+    "build": "tsc && vite build",
+    "start": "electron electron/main.mjs",
+    "test": "node --test tests/*.node.mjs && npm run build",
+    "test:coverage": "node --experimental-test-coverage --test tests/*.node.mjs",
+    "test:e2e": "npm run build && node --test --test-concurrency=1 tests/*.e2e.mjs",
+    "test:all": "npm test && npm run test:e2e",
+    "fixtures:generate": "node scripts/generate-synthetic-fixtures.mjs",
+    "dist:mac": "npm run build && electron-builder --mac dmg",
+    "dist:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@tailwindcss/vite": "^4.1.14",
-    "@vitejs/plugin-react": "^5.0.4",
-    "dotenv": "^17.2.3",
-    "express": "^4.21.2",
-    "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
+    "@fontsource/dm-sans": "^5.2.8",
+    "@fontsource/newsreader": "^5.2.8",
+    "lucide-react": "^0.468.0",
     "pdfjs-dist": "^5.4.624",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "react-markdown": "^10.1.0",
-    "vite": "^6.2.3"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.14.0",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
-    "tailwindcss": "^4.1.14",
-    "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.3",
-    "ws": "^8.21.3"
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "axe-core": "^4.13.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.0.12",
+    "jsdom": "^27.2.0",
+    "pdfkit": "^0.19.1",
+    "playwright": "^1.62.1",
+    "png-to-ico": "^3.0.2",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "vitest": "^4.0.18",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.jerri.finance",
+    "productName": "Jerri Finance",
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": true,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": true
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.finance",
+      "target": [
+        "dmg"
+      ],
+      "artifactName": "Jerri-Finance-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Jerri Finance",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "electron-winstaller@5.4.0": true,
+    "electron@43.4.1": true
   }
 }

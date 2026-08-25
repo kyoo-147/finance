@@ -1,2 +1,0 @@
-payout_id,effective_at,currency,gross,fee,net,reporting_category,balance_transaction_id,description,payout_expected_arrival_date,payout_status
-po_test_invalid,2026-07-31 00:01:27,usd,200.19,0.00,200.19,payout,txn_test_invalid,STRIPE PAYOUT,2026-07-31 00:00:00,paid

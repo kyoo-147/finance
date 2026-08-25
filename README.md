@@ -1,42 +1,59 @@
-# Jerri Finance Portal
+# Jerri Finance
 
-A local-only personal finance management application. The web server listens only on `http://127.0.0.1:4747`; there are no cloud accounts, API keys, or uploads to the Internet.
+A private Mac-first finance dashboard built around Jerri's monthly Stripe, Xero, and ING workflow.
 
-## Install and launch
+## Product documents
 
-Requires Node.js 24 or newer.
+- [`analysis/PRODUCT_PLAN.md`](analysis/PRODUCT_PLAN.md)
+- [`analysis/REQUIREMENTS_ANALYSIS.md`](analysis/REQUIREMENTS_ANALYSIS.md)
+- [`analysis/USER_FLOW.md`](analysis/USER_FLOW.md)
+- [`analysis/E2E_TEST_PLAN.md`](analysis/E2E_TEST_PLAN.md)
+- [`analysis/QA_ACCEPTANCE_REPORT.md`](analysis/QA_ACCEPTANCE_REPORT.md)
+- [`analysis/ADVERSARIAL_QA_MATRIX.md`](analysis/ADVERSARIAL_QA_MATRIX.md)
 
-1. Open a terminal in the project directory and run `npm install`.
-2. Run `npm run build`.
-3. Double-click **Start Jerri Finance Portal.cmd**.
+## Development
 
-The launcher checks dependencies, the production build, and the local health endpoint before opening the browser. If the portal is already running, it opens a new tab only. Keep the server window open while using the portal; close it to stop the portal.
+Requires Node.js 24 for domain tests and current npm.
 
-## Import sources
+```bash
+npm install
+npm run test:all
+npm run test:coverage
+npm run electron:dev
+```
 
-- Stripe: Itemised Payouts CSV.
-- Xero: CSV or text-based payslip PDF using the expected layout.
-- ING: CSV or text-based Orange Everyday statement PDF using the expected layout.
+## Synthetic monthly test data
 
-PDF files are accepted only when required fields can be read and the values reconcile exactly. Scanned, password-protected, corrupted, unexpected-layout, or unreconciled PDFs are safely rejected before any transaction is written. Bank transactions are always review-first; Stripe settlements and transfers are not automatically included in business profit.
+Three fictional months (August–October 2026) are available under `test-fixtures/synthetic/`. Each month contains a mutually consistent Stripe CSV, Xero payslip PDF, and ING-style bank statement PDF.
 
-## Backup and restore
+```bash
+npm run fixtures:generate
+npm run test:all
+```
 
-In **Settings → Local Data**, choose **Download backup**. The `.json` file contains the SQLite database and a SHA-256 manifest. Store it on a separate drive or backup device.
+Expected row counts, totals, matches, balances, and SHA-256 hashes are in `test-fixtures/synthetic/manifest.json`. No real customer information is used.
 
-To restore, choose **Choose backup**. The portal validates the format, checksum, size, SQLite integrity, and required tables before replacing current data. Restore replaces all local data; create a fresh backup before restoring.
+## Mac package
 
-The active database is stored at `data/jerri-finance.sqlite`. All monetary values are stored as integer cents; floating-point values are not used for money in the database or API. Protect the computer with a Windows account and BitLocker where possible; SQLite is not encrypted at the database layer in V1.
+Run on macOS:
 
-## Testing
+```bash
+npm install
+npm run test:all
+npm run dist:mac
+```
 
-- `npm run lint` — frontend type-check.
-- `npm run build` — production build.
-- `npm run server:test` — regression tests for PDF/CSV imports, financial integrity, SQLite atomicity, backup/restore, and persistence.
-- `npm run browser:e2e` — full Chrome/CDP acceptance run against an isolated database. Chrome must run with remote debugging on `:9222`; the runner starts the local server and writes screenshots to `tests/artifacts/ui-e2e/`.
+The unsigned DMG appears under `release/`. Apple signing/notarization requires the owner's Apple Developer identity and must be performed on macOS.
 
-## Protected public deployment
+## Privacy
 
-For a VPS deployment, keep Node bound to `127.0.0.1` and place Nginx in front of it. Set `JERRI_PUBLIC_MODE=true`, `JERRI_AUTH_USER`, and `JERRI_AUTH_PASSWORD` in the service environment. The health endpoint then reports `public-protected` and all portal/API routes require Basic Auth.
+Financial data is stored locally in Electron's application-data directory as `jerri-finance.sqlite`. The renderer has no direct Node access. `customer-inputs/` contains private test fixtures and is intentionally ignored by Git.
 
-Basic Auth must be used behind trusted HTTPS. Do not expose financial data or backup/restore endpoints over plain HTTP. A real domain and trusted TLS certificate are required for a client-facing deployment.
+## Supported inputs
+
+- Supplied Stripe Itemised Payouts CSV layout.
+- Supplied text-based Xero payslip PDF layout.
+- Supplied text-based ING Orange Everyday statement PDF layout.
+- Manual affiliate/other entries.
+
+Unknown PDF layouts fail closed. See the product plan for calculation rules and exclusions.
