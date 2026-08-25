@@ -4,12 +4,13 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {FinanceStore} from './store.mjs';
 import {australiaDate} from './calendar.mjs';
 import {shouldQuitWhenAllWindowsClosed} from './lifecycle.mjs';
+import {AiManager} from './ai.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const indexPath=path.join(here,'../dist/index.html');
 const devUrl=process.env.VITE_DEV_SERVER_URL||'';
 const devOrigin=devUrl?new URL(devUrl).origin:'';
-let store,startupError,mainWindow;const stagedPreviews=new Map();
+let store,ai,startupError,mainWindow;const stagedPreviews=new Map();
 function openStore(){try{store?.close();store=new FinanceStore(path.join(process.env.JERRI_DATA_DIR||app.getPath('userData'),'jerri-finance.sqlite'));startupError=null}catch(error){store=null;startupError=new Error(`Could not open the local finance workspace: ${error?.message||String(error)}`)}}
 function stagePreview(preview){stagedPreviews.clear();stagedPreviews.set(preview.id,preview);return preview}
 
@@ -36,7 +37,7 @@ else{
   app.on('second-instance',()=>{if(mainWindow){if(mainWindow.isMinimized())mainWindow.restore();mainWindow.focus()}});
   app.whenReady().then(()=>{
     session.defaultSession.setPermissionRequestHandler((_webContents,_permission,callback)=>callback(false));
-    openStore();
+    openStore();ai=new AiManager(process.env.JERRI_DATA_DIR||app.getPath('userData'));
     handle('bootstrap',()=>{if(startupError)openStore();return requireStore().bootstrap()});
     handle('choose-import-files',async()=>{const r=await dialog.showOpenDialog({title:'Add finance files',properties:['openFile','multiSelections'],filters:[{name:'Finance reports',extensions:['csv','pdf']}]});return r.canceled?null:stagePreview(await requireStore().preview(r.filePaths))});
     handle('confirm-import',previewId=>{const preview=stagedPreviews.get(previewId);if(!preview)throw new Error('Import preview expired or was not created by Jerri Finance. Please choose the files again.');const result=requireStore().confirm(preview);stagedPreviews.delete(previewId);return result});
@@ -49,6 +50,14 @@ else{
     handle('save-settings',input=>requireStore().saveSettings(input));
     handle('add-category',name=>requireStore().addCategory(name));
     handle('delete-category',name=>requireStore().deleteCategory(name));
+    handle('insights',month=>requireStore().insights(month));
+    handle('goals',()=>requireStore().goals());
+    handle('create-goal',input=>requireStore().createGoal(input));
+    handle('update-goal',input=>requireStore().updateGoal(input));
+    handle('delete-goal',id=>requireStore().deleteGoal(id));
+    handle('ai-state',()=>ai.state());
+    handle('ai-chat',input=>ai.chat(input.message,{insights:requireStore().insights(requireStore().dashboard().month),goals:requireStore().goals()}));
+    ipcMain.handle('ai-setup',async event=>{if(!trustedUrl(event.senderFrame.url))throw new Error('Untrusted renderer request blocked.');return ai.setup(progress=>event.sender.send('ai-progress',progress))});
     handle('save-snapshot',input=>requireStore().saveSnapshot(input));
     handle('snapshot-for',month=>requireStore().snapshotFor(month));
     handle('allocation-for',month=>requireStore().allocationFor(month));
@@ -58,6 +67,6 @@ else{
     createWindow();
     app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow()});
   });
-  app.on('before-quit',()=>store?.close());
+  app.on('before-quit',()=>{ai?.close();store?.close()});
   app.on('window-all-closed',()=>{if(shouldQuitWhenAllWindowsClosed(process.platform))app.quit()});
 }
