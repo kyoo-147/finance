@@ -57,7 +57,7 @@ else{
     handle('delete-goal',id=>requireStore().deleteGoal(id));
     handle('ai-state',()=>ai.state());
     handle('ai-chat',input=>ai.chat(input.message,{insights:requireStore().insights(requireStore().dashboard().month),goals:requireStore().goals()}));
-    ipcMain.handle('ai-setup',async event=>{if(!trustedUrl(event.senderFrame.url))throw new Error('Untrusted renderer request blocked.');return ai.setup(progress=>event.sender.send('ai-progress',progress))});
+    ipcMain.handle('ai-setup',async (event,input)=>{if(!trustedUrl(event.senderFrame.url))throw new Error('Untrusted renderer request blocked.');return ai.setup({modelId:input?.modelId,onProgress:progress=>event.sender.send('ai-progress',progress)})});
     handle('save-snapshot',input=>requireStore().saveSnapshot(input));
     handle('snapshot-for',month=>requireStore().snapshotFor(month));
     handle('allocation-for',month=>requireStore().allocationFor(month));
