@@ -1,65 +1,58 @@
 # Jerri Finance
 
-A private Mac-first finance dashboard built around Jerri's monthly Stripe, Xero, and ING workflow.
+Jerri Finance is a local-first Electron pet project for tracking personal and business money from Stripe, Xero, and ING files.
 
-## Product documents
+## Features
 
-- [`analysis/PRODUCT_PLAN.md`](analysis/PRODUCT_PLAN.md)
-- [`analysis/REQUIREMENTS_ANALYSIS.md`](analysis/REQUIREMENTS_ANALYSIS.md)
-- [`analysis/USER_FLOW.md`](analysis/USER_FLOW.md)
-- [`analysis/E2E_TEST_PLAN.md`](analysis/E2E_TEST_PLAN.md)
-- [`analysis/QA_ACCEPTANCE_REPORT.md`](analysis/QA_ACCEPTANCE_REPORT.md)
-- [`analysis/ADVERSARIAL_QA_MATRIX.md`](analysis/ADVERSARIAL_QA_MATRIX.md)
+- Import and review Stripe CSV, Xero payslip PDF, and ING statement PDF data.
+- Dashboard for cash flow, business profit, allocations, and financial snapshots.
+- Transaction search, filters, review, manual CRUD, matching, and undo import.
+- Deterministic Insights and deadline-aware Goals.
+- Optional private Ask Jerri chat using local `llama.cpp` models.
+- Local conversation history, model selection/removal, backup, and restore.
+- Custom categories with safe validation and persistence.
 
-## Vietnamese product documents
+## Run locally
 
-- [`docs/JERRI_USER_GUIDE_VI.md`](docs/JERRI_USER_GUIDE_VI.md)
-- [`docs/JERRI_PRODUCT_FUNCTIONS_VI.md`](docs/JERRI_PRODUCT_FUNCTIONS_VI.md)
-
-## Development
-## Development
-
-Requires Node.js 24 for domain tests and current npm.
+Requires Node.js 24 and npm.
 
 ```bash
 npm install
-npm run test:all
-npm run test:coverage
 npm run electron:dev
 ```
 
-## Synthetic monthly test data
-
-Three fictional months (August–October 2026) are available under `test-fixtures/synthetic/`. Each month contains a mutually consistent Stripe CSV, Xero payslip PDF, and ING-style bank statement PDF.
+## Test
 
 ```bash
-npm run fixtures:generate
 npm run test:all
+npm run test:e2e:full
 ```
 
-Expected row counts, totals, matches, balances, and SHA-256 hashes are in `test-fixtures/synthetic/manifest.json`. No real customer information is used.
+Tests use isolated synthetic data under `test-fixtures/synthetic/`; no real customer data is required.
 
-## Mac package
-
-Run on macOS:
+## Build
 
 ```bash
-npm install
-npm run test:all
+npm run build
+npm run dist:dir
+```
+
+For a macOS package:
+
+```bash
 npm run dist:mac
 ```
 
-The unsigned DMG appears under `release/`. Apple signing/notarization requires the owner's Apple Developer identity and must be performed on macOS.
+macOS hardware, signing, and notarization require a real macOS environment and are not inferred from Windows builds.
 
-## Privacy
+## Privacy and safety
 
-Financial data is stored locally in Electron's application-data directory as `jerri-finance.sqlite`. The renderer has no direct Node access. `customer-inputs/` contains private test fixtures and is intentionally ignored by Git.
+Finance data is stored locally in SQLite. The renderer has no direct Node.js access. AI is optional, runs locally through `llama.cpp`, receives read-only finance context, and never writes financial data. Model downloads require consent and checksum verification.
 
-## Supported inputs
+Unsupported or invalid input layouts fail closed.
 
-- Supplied Stripe Itemised Payouts CSV layout.
-- Supplied text-based Xero payslip PDF layout.
-- Supplied text-based ING Orange Everyday statement PDF layout.
-- Manual affiliate/other entries.
+## Documentation
 
-Unknown PDF layouts fail closed. See the product plan for calculation rules and exclusions.
+- [`docs/JERRI_USER_GUIDE_VI.md`](docs/JERRI_USER_GUIDE_VI.md)
+- [`docs/JERRI_PRODUCT_FUNCTIONS_VI.md`](docs/JERRI_PRODUCT_FUNCTIONS_VI.md)
+- [`analysis/QA_ACCEPTANCE_REPORT.md`](analysis/QA_ACCEPTANCE_REPORT.md)
