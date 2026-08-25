@@ -17,8 +17,8 @@ The first 60-case plan was not treated as proof that the product was exhaustive.
 - Total Windows-executable cases: **137/137 PASS**.
 - Mac-only release cases: **2 UNVERIFIED**.
 - Automated Node test functions: **47 PASS**.
-- Automated Electron test functions per runtime: **6 PASS**.
-- Electron test functions executed against source and packaged app: **12 PASS executions**.
+- Automated Electron test functions per runtime: **7 PASS**.
+- Electron test functions executed against source and packaged app: **14 PASS executions**.
 - Node line/function coverage for `electron/importers.mjs` and `electron/store.mjs`: **100% / 100%**.
 - Node branch coverage: `importers.mjs` **84.27%**, `store.mjs` **80.58%**; both remain **100% lines/functions**.
 
@@ -182,8 +182,8 @@ All material third-pass defects above have regression evidence. Mutation plus au
 
 ## Platform boundaries
 
-- Windows source app: **VERIFIED by the current 47 Node + 6 Electron suites**.
-- Freshly rebuilt Windows unpacked packaged app: **VERIFIED by the same 6 Electron suites**.
+- Windows source app: **VERIFIED by the current 47 Node + 7 Electron suites**.
+- Freshly rebuilt Windows unpacked packaged app: **VERIFIED by the same 7 Electron suites**.
 - Packaged source identity: **VERIFIED for runtime main/preload/store/importer/calendar/lifecycle files inside ASAR**.
 - Windows Authenticode signature: **NOT SIGNED**; this is an unpacked acceptance artifact, not a signed installer.
 - macOS lifecycle branch: **unit-verified only**, not physical/runtime Mac proof.

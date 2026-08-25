@@ -14,9 +14,9 @@ This does not mean “all platforms are proven.” A signed/notarized macOS DMG 
 - Windows-executable: **137/137 PASS**.
 - Mac-only release cases: **2 UNVERIFIED**.
 - Node domain/integration/adversarial/platform test functions: **47 PASS, 0 FAIL**.
-- Electron source-runtime test functions: **6 PASS, 0 FAIL**.
-- The same Electron test functions against packaged `Jerri Finance.exe`: **6 PASS, 0 FAIL**.
-- Source + packaged Electron executions: **12 PASS**.
+- Electron source-runtime test functions: **7 PASS, 0 FAIL**.
+- The same Electron test functions against packaged `Jerri Finance.exe`: **7 PASS, 0 FAIL**.
+- Source + packaged Electron executions: **14 PASS**.
 - TypeScript/Vite production build: **PASS**.
 - Synthetic fixture regeneration and deterministic manifest checks: **PASS**.
 - Dependency audit, including development dependencies: **0 vulnerabilities**.
@@ -24,8 +24,8 @@ This does not mean “all platforms are proven.” A signed/notarized macOS DMG 
 - Axe-core WCAG scan across empty/populated Dashboard, Transactions, bulk-review selection states, Settings, transaction dialog, and import dialog: **0 violations after fixes**.
 - Synthetic fixture regeneration is byte-for-byte deterministic against the pre-run SHA-256 inventory.
 - Fresh package ASAR runtime files match the tested source files by SHA-256.
-- Final unpacked executable SHA-256: `e6c18bc46d1e615fc403e44a29fa842136739eeb1761f05cd0cfa22173d26ad0`.
-- Final `app.asar` SHA-256: `4850216d48c81125690afa66fcf194914a9dfc27228c6318cab053006bdd9956`.
+- Final unpacked executable SHA-256: `fc475fa7ec8691ff1ad773b7935c75603c5d7649fb750b9e9407f7f676323a3e`.
+- Final `app.asar` SHA-256: `53e29ea952b7e01088b27a6bb940afdb58195ab370667a5c0373433a018985bb`.
 - Electron fuses: RunAsNode disabled, NODE_OPTIONS disabled, ASAR integrity enabled, only-load-ASAR enabled. CLI inspect and file-protocol privileges remain enabled because Playwright/package loading requires them in the current architecture.
 - Windows Authenticode status: **NOT SIGNED**.
 - Node coverage: `electron/importers.mjs` and `electron/store.mjs` are **100% lines/functions**; branch coverage is **84.27%** and **80.58%**, respectively.
