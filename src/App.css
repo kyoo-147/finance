@@ -75,3 +75,31 @@
 
 /* Use a geometric chevron so the arrow is optically centered, not text-baseline aligned. */
 .month-picker-chevron{width:7px;height:7px;flex:none;margin:0 3px 3px 0;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;font-size:0;line-height:0;transform:rotate(45deg)}
+
+/* Compact-window layout: keep the app inside the viewport instead of preserving desktop overflow. */
+@media(max-width:800px){
+ body{min-width:0;overflow-x:hidden}
+ .shell{display:block;min-width:0}
+ aside{position:static;width:100%;height:auto;min-height:0;padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px}
+ .brand{width:100%;padding:0 4px 4px;gap:9px}
+ .brand-mark{width:32px;height:32px;font-size:20px}
+ .brand strong{font-size:18px}.brand span{font-size:9px}
+ nav{width:100%;display:flex;gap:4px;overflow-x:auto}
+ nav button{flex:1;justify-content:center;padding:10px 7px;font-size:11px;gap:6px;white-space:nowrap}
+ .privacy{display:none}
+ main{display:block;width:100%;max-width:none;margin:0;padding:20px 16px 42px}
+ header{align-items:flex-start;margin-bottom:20px;gap:12px}header h1{font-size:29px}header .primary{padding:10px 12px;white-space:nowrap}
+ .period{flex-direction:column;align-items:stretch;gap:10px}.period>div{flex-wrap:wrap}.period .month-picker{width:100%}
+ .summary-grid{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:1fr}.panel{padding:18px}
+ .toolbar{flex-wrap:wrap}.toolbar .search{flex:1 1 100%}.toolbar .month-picker,.toolbar select{flex:1;min-width:0}.toolbar .filter-clear{order:4}.toolbar .secondary{flex:1}
+ .table{max-width:100%;overflow-x:auto}.table .tr{min-width:680px}
+ .month-picker-popover,.date-picker-popover{left:auto;right:0;max-width:calc(100vw - 32px)}
+ .modal-backdrop{padding:12px}.modal{padding:20px;border-radius:17px}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}.payslip-detail{grid-template-columns:repeat(2,1fr)}.modal-actions{flex-wrap:wrap}.modal-actions>*{flex:1}
+ .settings-page{max-width:none}.allocation-inputs,.snapshot-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:430px){
+ header{flex-direction:column}header .primary{align-self:flex-start}
+ .month-picker-popover,.date-picker-popover{width:calc(100vw - 32px)}
+ .allocation-inputs,.snapshot-grid{grid-template-columns:1fr}
+ .payslip-detail{gap:6px}.payslip-detail span{padding:9px}
+}
