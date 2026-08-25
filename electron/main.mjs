@@ -19,7 +19,7 @@ function trustedUrl(url){
 }
 function requireStore(){if(startupError)throw startupError;if(!store)throw new Error('The finance workspace is not ready.');return store}
 function createWindow(){
-  const win=new BrowserWindow({width:1440,height:920,minWidth:360,minHeight:600,title:'Jerri Finance',backgroundColor:'#f4f1e8',webPreferences:{preload:path.join(here,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,devTools:Boolean(devUrl)}});
+  const win=new BrowserWindow({width:1440,height:920,minWidth:360,minHeight:600,title:'Jerri Finance',show:false,backgroundColor:'#f4f1e8',webPreferences:{preload:path.join(here,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,devTools:Boolean(devUrl)}});
   mainWindow=win;
   win.removeMenu();
   mainWindow=win;
@@ -27,6 +27,8 @@ function createWindow(){
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-attach-webview',event=>event.preventDefault());
   win.webContents.on('will-navigate',(event,url)=>{if(!trustedUrl(url))event.preventDefault()});
+  win.once('ready-to-show',()=>win.show());
+  win.webContents.on('did-fail-load',(_event,errorCode,errorDescription)=>{if(errorCode!==-3)dialog.showErrorBox('Jerri Finance could not start',`${errorDescription} (${errorCode})`)});
   if(devUrl)void win.loadURL(devUrl);else void win.loadFile(indexPath);
   return win;
 }
