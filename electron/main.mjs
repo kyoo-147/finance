@@ -18,7 +18,7 @@ function trustedUrl(url){
 }
 function requireStore(){if(startupError)throw startupError;if(!store)throw new Error('The finance workspace is not ready.');return store}
 function createWindow(){
-  const win=new BrowserWindow({width:1440,height:920,minWidth:980,minHeight:700,title:'Jerri Finance',backgroundColor:'#f4f1e8',webPreferences:{preload:path.join(here,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,devTools:Boolean(devUrl)}});
+  const win=new BrowserWindow({width:1440,height:920,minWidth:360,minHeight:600,title:'Jerri Finance',backgroundColor:'#f4f1e8',webPreferences:{preload:path.join(here,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,devTools:Boolean(devUrl)}});
   mainWindow=win;
   win.removeMenu();
   mainWindow=win;
