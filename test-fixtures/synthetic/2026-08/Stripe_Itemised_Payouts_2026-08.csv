@@ -1,0 +1,9 @@
+payout_id,effective_at,currency,gross,fee,net,reporting_category,balance_transaction_id,description,payout_expected_arrival_date,payout_status
+po_demo_202608_1,2026-08-03 09:00:00,aud,120.00,0.00,120.00,payout,txn_demo_202608_1,STRIPE PAYOUT,2026-08-03 00:00:00,paid
+po_demo_202608_2,2026-08-05 09:00:00,aud,180.00,0.00,180.00,payout,txn_demo_202608_2,STRIPE PAYOUT,2026-08-05 00:00:00,paid
+po_demo_202608_3,2026-08-08 09:00:00,aud,95.00,0.00,95.00,payout,txn_demo_202608_3,STRIPE PAYOUT,2026-08-08 00:00:00,paid
+po_demo_202608_4,2026-08-11 09:00:00,aud,220.00,0.00,220.00,payout,txn_demo_202608_4,STRIPE PAYOUT,2026-08-11 00:00:00,paid
+po_demo_202608_5,2026-08-15 09:00:00,aud,145.00,0.00,145.00,payout,txn_demo_202608_5,STRIPE PAYOUT,2026-08-15 00:00:00,paid
+po_demo_202608_6,2026-08-19 09:00:00,aud,310.00,0.00,310.00,payout,txn_demo_202608_6,STRIPE PAYOUT,2026-08-19 00:00:00,paid
+po_demo_202608_7,2026-08-24 09:00:00,aud,160.00,0.00,160.00,payout,txn_demo_202608_7,STRIPE PAYOUT,2026-08-24 00:00:00,paid
+po_demo_202608_8,2026-08-28 09:00:00,aud,240.00,0.00,240.00,payout,txn_demo_202608_8,STRIPE PAYOUT,2026-08-28 00:00:00,paid

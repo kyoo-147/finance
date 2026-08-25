@@ -1,6 +1,0 @@
-{
-  "name": "Jerri Finance Portal",
-  "description": "Interactive financial portal dashboard for business owners to manage transactions, cash flow, profit allocation, net worth, and investments.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

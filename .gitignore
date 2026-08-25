@@ -1,14 +1,27 @@
+# Private customer fixtures and extracted financial data
+/customer-inputs/
+/analysis/pdf-layout-*.txt
+/analysis/pdf-extract-*.txt
+/analysis/npm-audit.json
+
+# Local databases and backups
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+/data/
+/backups/
+
+# Dependencies and builds
 node_modules/
-build/
 dist/
+release/
 coverage/
-.DS_Store
 *.log
-data/
-uploads/
-.env*
+.DS_Store
+.env
+.env.*
 !.env.example
 
-# Local QA artifacts may contain financial fixture data and are not published.
-tests/artifacts/
-.lavish/
+# Temporary acceptance workspaces
+/.tmp-*/
+/.pi-qa/

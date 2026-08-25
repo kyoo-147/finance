@@ -1,0 +1,96 @@
+{
+  "generatorVersion": 1,
+  "notice": "Entirely synthetic test data. No real customer information.",
+  "months": {
+    "2026-08": {
+      "expected": {
+        "stripeRows": 8,
+        "stripeTotalCents": 147000,
+        "xeroGrossCents": 125000,
+        "xeroPaygCents": 21000,
+        "xeroSuperCents": 15000,
+        "xeroNetCents": 104000,
+        "bankRows": 18,
+        "bankOpeningCents": 125000,
+        "bankClosingCents": 311300,
+        "bankMovementCents": 186300,
+        "stripeMatches": 8,
+        "employmentMatches": 1
+      },
+      "files": {
+        "stripe": {
+          "path": "2026-08/Stripe_Itemised_Payouts_2026-08.csv",
+          "sha256": "1d4c21b85cd3daf2823782459b11750ecaf1eba735c2b30fb679eaef68415db1"
+        },
+        "payslip": {
+          "path": "2026-08/Xero_Payslip_2026-08.pdf",
+          "sha256": "ed9dbb516735fdc9be57d17bfe27c563799ffddf45d1c9182977d4bc6c7cf869"
+        },
+        "bank": {
+          "path": "2026-08/ING_Orange_Everyday_2026-08.pdf",
+          "sha256": "ee3ab7accf9393d3f63efb5317273e591d869a45aec0f40d2321d71c184c7233"
+        }
+      }
+    },
+    "2026-09": {
+      "expected": {
+        "stripeRows": 9,
+        "stripeTotalCents": 192000,
+        "xeroGrossCents": 132000,
+        "xeroPaygCents": 22500,
+        "xeroSuperCents": 15840,
+        "xeroNetCents": 109500,
+        "bankRows": 18,
+        "bankOpeningCents": 188700,
+        "bankClosingCents": 354600,
+        "bankMovementCents": 165900,
+        "stripeMatches": 9,
+        "employmentMatches": 1
+      },
+      "files": {
+        "stripe": {
+          "path": "2026-09/Stripe_Itemised_Payouts_2026-09.csv",
+          "sha256": "9961f4d78157265abc1c84bbe1647957554c6490353fc146332770b801c26754"
+        },
+        "payslip": {
+          "path": "2026-09/Xero_Payslip_2026-09.pdf",
+          "sha256": "a6b03b307005258cf9d692f6be46cad1919b2cad64637c4cfa23dc855fc7aa90"
+        },
+        "bank": {
+          "path": "2026-09/ING_Orange_Everyday_2026-09.pdf",
+          "sha256": "0b7a56c24c5e594cea90809472ea04c268921af2ba4d3e91681d504068caed56"
+        }
+      }
+    },
+    "2026-10": {
+      "expected": {
+        "stripeRows": 7,
+        "stripeTotalCents": 104000,
+        "xeroGrossCents": 118000,
+        "xeroPaygCents": 19000,
+        "xeroSuperCents": 14160,
+        "xeroNetCents": 99000,
+        "bankRows": 17,
+        "bankOpeningCents": 213300,
+        "bankClosingCents": 320800,
+        "bankMovementCents": 107500,
+        "stripeMatches": 7,
+        "employmentMatches": 1
+      },
+      "files": {
+        "stripe": {
+          "path": "2026-10/Stripe_Itemised_Payouts_2026-10.csv",
+          "sha256": "19c3ef2f9f7091cd46347dd62a130e441e8144eedc1440392d13508cac5891f1"
+        },
+        "payslip": {
+          "path": "2026-10/Xero_Payslip_2026-10.pdf",
+          "sha256": "36e247dc9de24965c894f55fae16bc2aef1b94f296726e88ad2faa6da4fe354b"
+        },
+        "bank": {
+          "path": "2026-10/ING_Orange_Everyday_2026-10.pdf",
+          "sha256": "bbc043043067c71608e9ee868081ee5972a375f24e00497387ef6a7479522e0f"
+        }
+      }
+    }
+  }
+}

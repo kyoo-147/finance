@@ -1,149 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { FinanceProvider, useFinance } from './context/FinanceContext';
-import { Sidebar } from './components/common/Sidebar';
-import { MobileHeader } from './components/common/MobileHeader';
-import { GlobalSearchModal } from './components/common/GlobalSearchModal';
-import { NotificationDrawer } from './components/common/NotificationDrawer';
-import { AiAssistantDrawer } from './components/common/AiAssistantDrawer';
-import { OverviewPage } from './pages/OverviewPage';
-import { ImportsPage } from './pages/ImportsPage';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { AllocationPage } from './pages/AllocationPage';
-import { CashFlowPage } from './pages/CashFlowPage';
-import { NetWorthPage } from './pages/NetWorthPage';
-import { InvestmentsPage } from './pages/InvestmentsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { Search, Bell, Sparkles } from 'lucide-react';
-import { financialYearLabel, selectLatestTransactionMonth } from './domain/selectors';
+import {useEffect,useState} from 'react';import {LayoutDashboard,ArrowLeftRight,Settings,Plus,Upload,ChevronRight,AlertCircle,Search,X,Check,RotateCcw,Database,WalletCards,TrendingUp,PiggyBank,Landmark,FileText} from 'lucide-react';import './App.css';
+type View='dashboard'|'transactions'|'settings';type Tx={id:string;date:string;description:string;amountCents:number;kind:string;scope:string;category:string;reviewStatus:string;profitIncluded:boolean;note:string;sourceKey?:string};
+const money=(c=0)=>new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD',minimumFractionDigits:c%100===0?0:2,maximumFractionDigits:2}).format(c/100);const fullMoney=(c=0)=>new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(c/100);const LABELS:Record<string,string>={business_pt:'Personal Training',business_affiliate:'Affiliate Marketing',creditCardDebt:'Credit Card Debt',ownersPay:"Owner's Pay"};const label=(s='')=>LABELS[s]||s.replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\b\w/g,(c:string)=>c.toUpperCase());
+const australiaToday=()=>{const parts=new Intl.DateTimeFormat('en-AU',{timeZone:'Australia/Melbourne',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),value=(type:string)=>parts.find(part=>part.type===type)?.value||'';return `${value('year')}-${value('month')}-${value('day')}`};
+const audToCents=(value:any)=>{const text=String(value).trim(),match=text.match(/^(-)?(\d+)(?:\.(\d{1,2}))?$/);if(!match)throw new Error('Enter AUD using no more than two decimal places.');const cents=Number(match[2])*100+Number((match[3]||'').padEnd(2,'0'));if(!Number.isSafeInteger(cents))throw new Error('That AUD amount is too large.');return match[1]?-cents:cents};
+export default function App(){const [view,setView]=useState<View>('dashboard'),[boot,setBoot]=useState<any>(),[dash,setDash]=useState<any>(),[busy,setBusy]=useState(true),[error,setError]=useState(''),[preview,setPreview]=useState<any>(),[transactions,setTransactions]=useState<Tx[]>([]),[editing,setEditing]=useState<any>(),[filters,setFilters]=useState({search:'',month:''}),[toast,setToast]=useState('');
+ const load=async()=>{try{setBusy(true);const b=await window.finance.bootstrap();setBoot(b);setDash(b.dashboard);setFilters(f=>({...f,month:b.dashboard.month}));}catch(e:any){setError(e.message||'Could not open your finance workspace.')}finally{setBusy(false)}};useEffect(()=>{load()},[]);
+ const notify=(m:string)=>{setToast(m);setTimeout(()=>setToast(''),3500)};const addFiles=async()=>{try{setError('');const p=await window.finance.chooseImportFiles();if(p)setPreview(p)}catch(e:any){setError(e.message)}};
+ const confirmImport=async()=>{try{setBusy(true);const b=await window.finance.confirmImport(preview.id);setBoot(b);setDash(b.dashboard);setFilters(f=>({...f,month:b.dashboard.month}));setPreview(null);setView('dashboard');notify('Files imported and dashboard updated.')}catch(e:any){setError(e.message)}finally{setBusy(false)}};
+ const openTransactions=async(extra?:any)=>{try{setError('');setView('transactions');const f=extra?{search:'',month:extra.month||dash?.month||filters.month,...extra}:filters;setFilters(f);setTransactions(await window.finance.transactions(f))}catch(e:any){setError(e.message||'Could not load transactions.')}};const refreshTx=async()=>{try{setTransactions(await window.finance.transactions(filters))}catch(e:any){setError(e.message||'Could not refresh transactions.')}};const reviewTransactions=async(ids:string[])=>{try{setError('');const result=await window.finance.reviewTransactions(ids);await refreshTx();setDash(await window.finance.dashboard(filters.month));notify(`${result.count} transaction${result.count===1?'':'s'} marked reviewed.`)}catch(e:any){setError(e.message||'Could not review the selected transactions.');throw e}};
+ const selectMonth=async(m:string)=>{try{setError('');setDash(await window.finance.dashboard(m));setFilters(f=>({...f,month:m==='all'?'':m}))}catch(e:any){setError(e.message||'Could not load that month.')}};
+ if(busy&&!boot)return <div className="loading"><div className="brand-mark">J</div><p>Preparing your finance workspace…</p></div>;
+ if(error&&!boot)return <div className="fatal"><AlertCircle/><h1>We couldn’t open Jerri Finance</h1><p>{error}</p><button onClick={load}>Try again</button></div>;
+ return <div className="shell"><aside><div className="brand"><div className="brand-mark">J</div><div><strong>Jerri</strong><span>Finance</span></div></div><nav>{([{id:'dashboard',icon:LayoutDashboard,name:'Dashboard'},{id:'transactions',icon:ArrowLeftRight,name:'Transactions'},{id:'settings',icon:Settings,name:'Settings'}] as any[]).map(n=><button className={view===n.id?'active':''} onClick={()=>{setView(n.id);if(n.id==='transactions')openTransactions()}} key={n.id}><n.icon size={19}/>{n.name}</button>)}</nav><div className="privacy"><Database size={17}/><div><b>Private on this Mac</b><span>Your data stays local.</span></div></div></aside><main><header><div><span className="eyebrow">Jerri Finance</span><h1>{view==='dashboard'?'Your money, made clear.':view==='transactions'?'Every dollar, easy to trace.':'Simple setup, your way.'}</h1></div><button className="primary" onClick={addFiles}><Upload size={18}/> Add files</button></header>{error&&<div className="banner error" role="alert"><AlertCircle size={18}/>{error}<button aria-label="Dismiss error" onClick={()=>setError('')}><X size={16}/></button></div>}{view==='dashboard'&&dash&&<Dashboard dash={dash} months={boot.months} onMonth={selectMonth} onDrill={openTransactions} onAdd={addFiles} onSettings={()=>setView('settings')}/>} {view==='transactions'&&<Transactions rows={transactions} filters={filters} setFilters={setFilters} refresh={refreshTx} edit={setEditing} review={reviewTransactions}/>} {view==='settings'&&<SettingsPage boot={boot} selectedMonth={dash?.mode==='all'?undefined:dash?.month} reload={load} notify={notify} reportError={setError}/>}</main>{preview&&<ImportModal preview={preview} close={()=>setPreview(null)} confirm={confirmImport}/>} {editing&&<TransactionModal tx={editing} close={()=>setEditing(null)} saved={async()=>{const wasNew=Boolean(editing.isNew);setEditing(null);if(wasNew){const next={...filters,search:'',kind:'',scope:'',category:'',reviewStatus:''};setFilters(next);setTransactions(await window.finance.transactions(next))}else await refreshTx();setDash(await window.finance.dashboard(filters.month));notify('Transaction saved.')}}/>}{toast&&<div className="toast" role="status" aria-live="polite"><Check size={18}/>{toast}</div>}</div>}
 
-const MainLayout: React.FC = () => {
-  const { activeTab, setIsSearchOpen, setIsNotificationsOpen, setIsAiAssistantOpen, businessProfile, transactions, isLoading, apiError, refresh } = useFinance();
-  const financialYear = financialYearLabel(selectLatestTransactionMonth(transactions), businessProfile.financialYearStartMonth || 7);
-  const [isScrolled, setIsScrolled] = useState(false);
+function Dashboard({dash,months,onMonth,onDrill,onAdd,onSettings}:any){const maxIncome=Math.max(1,...dash.incomeBySource.map((x:any)=>x.value)),isAll=dash.mode==='all',drill=(extra:any={})=>onDrill(isAll?{...extra,month:''}:{month:dash.month,...extra});return <><section className="period"><div><span className="period-pill">{isAll?'All time':'Monthly'}</span><span>{isAll?'Your complete position across every month.':'Choose a month to inspect its complete position.'}</span></div><select aria-label="Dashboard month" value={isAll?'all':dash.month} onChange={e=>onMonth(e.target.value)}><option value="all">All time</option>{months.length?months.map((m:string)=><option key={m}>{m}</option>):<option>{dash.month}</option>}</select></section>{dash.transactionCount===0&&!dash.financial?<section className="empty"><div className="empty-art"><FileText/><span>CSV</span><span>PDF</span></div><span className="eyebrow">Start with the files you already have</span><h2>Drop the spreadsheets. Keep the clarity.</h2><p>Add your Stripe, Xero, or ING report. We’ll check it before anything changes.</p><button className="primary" onClick={onAdd}><Upload size={18}/> Add your first files</button></section>:<><section className="summary-grid">{[{l:'Total cash in',v:dash.summary.cashIn,i:TrendingUp,c:'sage',f:{cashDirection:'in'}},{l:'Total cash out',v:dash.summary.cashOut,i:WalletCards,c:'clay',f:{cashDirection:'out'}},{l:'Business profit',v:dash.summary.businessProfit,i:Landmark,c:'ink',f:{month:dash.month,profitIncluded:true}},{l:'Cash remaining',v:dash.summary.cashRemaining,i:PiggyBank,c:'gold',f:{month:dash.month,cashFlow:true}}].map((x:any)=><button className={`summary ${x.c}`} key={x.l} onClick={()=>drill(x.f)}><div><span>{x.l}</span><strong>{money(x.v)}</strong></div><x.i/><small>View transactions <ChevronRight size={14}/></small></button>)}</section>{dash.needsReview>0&&<button className="attention" onClick={()=>drill({reviewStatus:'needs_review'})}><AlertCircle/><div><strong>{dash.needsReview} transactions need a quick check</strong><span>They are safely excluded from business profit until you confirm them.</span></div><ChevronRight/></button>}<section className="dashboard-grid"><article className="panel income"><div className="panel-head"><div><span className="eyebrow">Income mix</span><h2>Where money came from</h2></div><button onClick={()=>drill({kind:'income'})}>See all</button></div><div className="bars">{dash.incomeBySource.map((x:any)=><button key={x.label} onClick={()=>drill({kind:'income',scope:x.label})}><div><span>{label(x.label)}</span><b>{fullMoney(x.value)}</b></div><i style={{width:`${Math.max(5,x.value/maxIncome*100)}%`}}/></button>)}</div></article><article className="panel allocation"><div className="panel-head"><div><span className="eyebrow">Profit plan</span><h2>{money(Math.max(0,dash.summary.businessProfit))} ready to allocate</h2></div></div><div className="allocation-list">{dash.allocations.map((x:any)=><div key={x.key}><span className={`dot ${x.key}`}/><span>{label(x.key)} <em>{x.percent}%</em></span><b>{fullMoney(x.value)}</b></div>)}</div></article><article className="panel expenses"><div className="panel-head"><div><span className="eyebrow">Spending</span><h2>Largest expense categories</h2></div><button onClick={()=>drill({kind:'expense'})}>See all</button></div>{dash.expensesByCategory.slice(0,6).map((x:any,i:number)=><button className="expense-row" key={x.label} onClick={()=>drill({kind:'expense',category:x.label})}><span>{String(i+1).padStart(2,'0')}</span><b>{x.label}</b><em>{fullMoney(x.value)}</em></button>)}</article><article className="panel position"><span className="eyebrow">Financial position</span><h2>{dash.financial?money(dash.financial.netWorthCents):'Add your first snapshot'}</h2><p>{dash.financial?'Latest estimated net worth':'Track savings, investments, super and debts without another spreadsheet.'}</p><button onClick={onSettings}>Update balances <ChevronRight size={16}/></button></article><article className="panel cashflow"><div className="panel-head"><div><span className="eyebrow">Cash flow</span><h2>Money moving over time</h2></div><div className="legend"><span><i className="in"/>Cash in</span><span><i className="out"/>Cash out</span></div></div><div className="cash-bars">{dash.trend.map((x:any)=>{const max=Math.max(1,...dash.trend.flatMap((v:any)=>[v.cashIn,v.cashOut]));return <div key={x.month}><div><i className="in" style={{height:`${Math.max(3,x.cashIn/max*100)}%`}}/><i className="out" style={{height:`${Math.max(3,x.cashOut/max*100)}%`}}/></div><span>{x.month}</span></div>})}</div></article></section></>}</>}
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 15);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+function Transactions({rows,filters,setFilters,refresh,edit,review}:any){
+ const [selected,setSelected]=useState<Set<string>>(new Set()),[reviewing,setReviewing]=useState(false);
+ useEffect(()=>{const timer=setTimeout(refresh,150);return()=>clearTimeout(timer)},[filters.search,filters.month,filters.kind,filters.scope,filters.category,filters.reviewStatus,filters.cashDirection,filters.cashFlow,filters.profitIncluded]);
+ useEffect(()=>{const eligibleIds=new Set<string>(rows.filter((tx:Tx)=>tx.reviewStatus==='needs_review').map((tx:Tx)=>tx.id));setSelected(current=>new Set([...current].filter(id=>eligibleIds.has(id))))},[rows]);
+ const active=[filters.scope&&`Scope: ${label(filters.scope)}`,filters.category&&`Category: ${filters.category}`,filters.reviewStatus&&'Needs review only',filters.cashDirection&&`Cash ${filters.cashDirection}`,filters.cashFlow&&'Cash movement only',filters.profitIncluded&&'Business profit only'].filter(Boolean),eligible=rows.filter((tx:Tx)=>tx.reviewStatus==='needs_review'),allSelected=eligible.length>0&&eligible.every((tx:Tx)=>selected.has(tx.id));
+ const toggle=(id:string)=>setSelected(current=>{const next=new Set(current);next.has(id)?next.delete(id):next.add(id);return next}),toggleAll=()=>setSelected(allSelected?new Set():new Set(eligible.map((tx:Tx)=>tx.id)));
+ const submit=async()=>{if(!selected.size||reviewing)return;try{setReviewing(true);await review([...selected]);setSelected(new Set())}catch{}finally{setReviewing(false)}};
+ return <section className="transactions"><div className="toolbar"><label className="search"><Search size={17}/><input placeholder="Search transactions" value={filters.search} onChange={e=>setFilters({...filters,search:e.target.value})}/></label><input className="month-filter" aria-label="Transaction month" type="month" value={filters.month} onChange={e=>setFilters({...filters,month:e.target.value})}/><select aria-label="Transaction type" value={filters.kind||''} onChange={e=>setFilters({...filters,kind:e.target.value})}><option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option><option value="transfer">Transfer</option><option value="unknown">Needs review</option></select><button className="filter-clear" onClick={()=>setFilters({search:'',month:filters.month})}>Clear filters</button><button className="secondary" onClick={()=>edit({date:australiaToday(),description:'',amountCents:0,kind:'income',scope:'business_affiliate',category:'Affiliate Marketing Income',reviewStatus:'confirmed',profitIncluded:true,note:'',isNew:true})}><Plus size={17}/> Add manually</button></div>{active.length>0&&<div className="active-filters" aria-live="polite"><b>Showing:</b>{active.map(item=><span key={String(item)}>{item}</span>)}</div>}{eligible.length>0&&<div className="bulk-review" aria-live="polite"><div><b>{selected.size?`${selected.size} selected`:`${eligible.length} need review`}</b><span>Marking reviewed keeps their current category and profit treatment.</span></div><button className="secondary" onClick={toggleAll}>{allSelected?'Deselect all':'Select all'}</button><button className="primary" disabled={!selected.size||reviewing} onClick={submit}>{reviewing?'Reviewing…':`Mark reviewed${selected.size?` (${selected.size})`:''}`}</button></div>}<div className="table"><div className="tr th"><label className="row-check"><input type="checkbox" aria-label="Select all transactions needing review" checked={allSelected} onChange={toggleAll} disabled={!eligible.length}/></label><div className="transaction-columns"><span>Date</span><span>Description</span><span>Category</span><span>Scope</span><span>Amount</span></div></div>{rows.length?rows.map((transaction:Tx)=><div className="tr" key={transaction.id}>{transaction.reviewStatus==='needs_review'?<label className="row-check"><input type="checkbox" aria-label={`Select ${transaction.description}`} checked={selected.has(transaction.id)} onChange={()=>toggle(transaction.id)}/></label>:<span/>}<button className="transaction-open" onClick={()=>edit(transaction)}><span>{transaction.date}</span><span><b>{transaction.description}</b>{transaction.reviewStatus==='needs_review'&&<em className="review">Needs review</em>}</span><span>{transaction.category}</span><span>{label(transaction.scope)}</span><strong className={transaction.amountCents>=0?'positive':'negative'}>{fullMoney(transaction.amountCents)}</strong></button></div>):<div className="no-results">No transactions match these filters.</div>}</div></section>
+}
+function TransactionModal({tx,close,saved}:any){const [form,setForm]=useState({...tx,amountAud:tx.amountCents/100,rememberRule:false}),[error,setError]=useState(''),[saving,setSaving]=useState(false);const patch=(k:string,v:any)=>setForm((f:any)=>({...f,[k]:v}));const save=async()=>{if(saving)return;try{setSaving(true);const payload={...form,amountCents:audToCents(form.amountAud),reviewStatus:'confirmed'};form.isNew?await window.finance.createTransaction(payload):await window.finance.updateTransaction(payload);await saved()}catch(e:any){setError(e.message);setSaving(false)}};const remove=async()=>{if(saving)return;try{if(confirm('Delete this manual transaction?')){setSaving(true);await window.finance.deleteTransaction(form.id);await saved()}}catch(e:any){setError(e.message);setSaving(false)}};return <div className="modal-backdrop" onKeyDown={e=>{if(e.key==='Escape'&&!saving)close()}}><div className="modal editor" role="dialog" aria-modal="true" aria-labelledby="transaction-dialog-title"><div className="modal-head"><div><span className="eyebrow">{form.isNew?'Manual entry':'Transaction detail'}</span><h2 id="transaction-dialog-title">{form.isNew?'Add a transaction':'Check and refine'}</h2></div><button aria-label="Close transaction" onClick={close}><X/></button></div>{error&&<div className="banner error" role="alert">{error}</div>}{tx.metadata?.grossCents!=null&&<div className="payslip-detail"><span>Gross pay <b>{fullMoney(tx.metadata.grossCents)}</b></span><span>PAYG <b>{fullMoney(tx.metadata.paygCents)}</b></span><span>Super <b>{fullMoney(tx.metadata.superCents)}</b></span><span>Net pay <b>{fullMoney(tx.amountCents)}</b></span></div>}<div className="form-grid"><label>Date<input autoFocus type="date" disabled={!form.isNew&&!form.sourceKey?.startsWith('manual:')} value={form.date} onChange={e=>patch('date',e.target.value)}/></label><label>Amount (AUD)<input type="number" step="0.01" disabled={!form.isNew&&!form.sourceKey?.startsWith('manual:')} value={form.amountAud} onChange={e=>patch('amountAud',e.target.value)}/><small>Use a minus sign for money going out.</small></label><label className="wide">Description<input disabled={!form.isNew&&!form.sourceKey?.startsWith('manual:')} value={form.description} onChange={e=>patch('description',e.target.value)}/></label><label>What is it?<select value={form.kind} onChange={e=>patch('kind',e.target.value)}><option value="income">Income</option><option value="expense">Expense</option><option value="transfer">Transfer</option><option value="unknown">Not sure</option></select></label><label>Belongs to<select value={form.scope} onChange={e=>patch('scope',e.target.value)}><option value="business_pt">Personal Training</option><option value="business_affiliate">Affiliate</option><option value="employment">Employment</option><option value="personal">Personal</option><option value="unknown">Not sure</option></select></label><label className="wide">Category<input value={form.category} onChange={e=>patch('category',e.target.value)}/></label><label className="wide check"><input type="checkbox" checked={form.profitIncluded} onChange={e=>patch('profitIncluded',e.target.checked)}/><span><b>Include in business profit</b><small>Only PT and affiliate business activity can be included.</small></span></label>{!form.isNew&&tx.reviewStatus==='needs_review'&&<label className="wide check"><input type="checkbox" checked={form.rememberRule} onChange={e=>patch('rememberRule',e.target.checked)}/><span><b>Use this choice next time</b><small>Future transactions with this exact description will be organised the same way.</small></span></label>}<label className="wide">Note<textarea value={form.note||''} onChange={e=>patch('note',e.target.value)}/></label></div><div className="modal-actions">{form.sourceKey?.startsWith('manual:')&&<button className="danger" disabled={saving} onClick={remove}>Delete</button>}<button className="secondary" disabled={saving} onClick={close}>Cancel</button><button className="primary" disabled={saving} onClick={save}>{saving?'Saving…':'Save transaction'}</button></div></div></div>}
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFD] text-[#08123D] flex font-sans antialiased selection:bg-[#1547F5] selection:text-white">
-      {/* Desktop Sidebar Navigation */}
-      <div className="hidden lg:block">
-        <Sidebar />
-      </div>
+function ImportModal({preview,close,confirm}:any){const [pending,setPending]=useState(false);const submit=async()=>{if(pending)return;setPending(true);try{await confirm()}finally{setPending(false)}};return <div className="modal-backdrop" onKeyDown={e=>{if(e.key==='Escape'&&!pending)close()}}><div className="modal import" role="dialog" aria-modal="true" tabIndex={-1} autoFocus aria-labelledby="import-dialog-title"><div className="modal-head"><div><span className="eyebrow">Import preview</span><h2 id="import-dialog-title">Everything checked before it changes</h2></div><button aria-label="Close import preview" onClick={close}><X/></button></div><div className="import-metrics"><div><strong>{preview.files.length}</strong><span>files checked</span></div><div><strong>{preview.transactionCount}</strong><span>records ready</span></div><div><strong>{preview.matchedSettlements+(preview.matchedEmployment||0)}</strong><span>bank matches</span></div><div><strong>{preview.needsReview}</strong><span>need review</span></div></div><div className="file-list">{preview.files.map((f:any)=><div key={f.id}><div className={`file-icon ${f.source}`}><FileText/></div><div><b>{f.fileName}</b><span>{f.summary}</span></div><em className={f.duplicate?'duplicate':'ready'}>{f.duplicate?'Already imported':'Ready'}</em></div>)}</div>{preview.needsReview>0&&<div className="banner note"><AlertCircle/><span><b>Unclear bank transactions will stay out of business profit.</b> You can review them safely from Transactions after import.</span></div>}<div className="modal-actions"><button className="secondary" disabled={pending} onClick={close}>Cancel</button><button className="primary" disabled={!preview.transactionCount||pending} onClick={submit}>{pending?'Importing…':'Confirm import'}</button></div></div></div>}
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile App Header */}
-        <MobileHeader />
-
-        {/* Desktop Top Header Bar (Single sticky floating glass hierarchy) */}
-        <header
-          className={`hidden lg:flex items-center justify-between px-6 lg:px-8 sticky top-0 z-20 gap-4 transition-all duration-300 ease-in-out ${
-            isScrolled
-              ? 'h-14 bg-white/80 backdrop-blur-md border-b border-slate-200/80 shadow-xs'
-              : 'h-16 bg-white/95 backdrop-blur-xs border-b border-[#E7EBF3] shadow-2xs'
-          }`}
-        >
-          {/* Left: Workspace Context & Status Indicator */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-[13px] font-semibold text-[#08123D]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Jerri Finance Portal</span>
-            </div>
-            <span className="text-[#C1C9D9] font-light">/</span>
-            <span className="text-[11.5px] font-medium text-[#7E8AA8] bg-[#F4F7FF] px-2.5 py-0.5 rounded-md border border-[#E2E8F0]">
-              {financialYear}
-            </span>
-          </div>
-
-          {/* Right Header Bar Controls */}
-          <div className="flex items-center gap-3.5">
-            {/* Search Input Button */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className={`flex items-center gap-2.5 bg-[#F8FAFD] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#C1C9D9] text-[#7E8AA8] text-[12.5px] px-3.5 rounded-[10px] w-64 xl:w-72 shadow-2xs transition-all cursor-pointer ${
-                isScrolled ? 'py-1' : 'py-1.5'
-              }`}
-            >
-              <Search className="w-4 h-4 text-[#7E8AA8]" />
-              <span className="flex-1 text-left truncate">Search transactions, categories...</span>
-              <kbd className="bg-white border border-[#E2E8F0] text-[10px] font-mono px-1.5 py-0.5 rounded text-[#64748B] flex items-center gap-0.5">
-                ⌘ K
-              </kbd>
-            </button>
-
-            {/* AI Assistant Quick Trigger (Text only, no icon per requirement) */}
-            <button
-              onClick={() => setIsAiAssistantOpen(true)}
-              className={`flex items-center bg-slate-100 hover:bg-slate-200/70 border border-slate-200 text-slate-800 font-semibold text-[12px] px-3 rounded-[8px] transition-all cursor-pointer ${
-                isScrolled ? 'py-1' : 'py-1.5'
-              }`}
-              title="Open AI Financial Assistant"
-            >
-              <span>Copilot</span>
-            </button>
-
-            {/* Notification Bell */}
-            <button
-              onClick={() => setIsNotificationsOpen(true)}
-              className="p-2 rounded-[10px] bg-white hover:bg-[#F4F7FF] text-[#4C5B82] hover:text-[#1547F5] relative transition-all cursor-pointer border border-[#E2E8F0] shadow-2xs"
-              aria-label="Notifications"
-            >
-              <Bell className="w-4.5 h-4.5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#1547F5]" />
-            </button>
-
-            {/* User Profile Avatar Pill */}
-            <div className="flex items-center gap-2.5 pl-2 border-l border-[#E7EBF3]">
-              <div
-                className={`rounded-full bg-[#EEF3FF] text-[#1547F5] font-bold text-xs flex items-center justify-center overflow-hidden border border-[#CBD5E1] transition-all ${
-                  isScrolled ? 'w-7 h-7' : 'w-8 h-8'
-                }`}
-              >
-                <span>{businessProfile.ownerName.charAt(0)}</span>
-              </div>
-              <div className="text-[12px] hidden xl:block">
-                <div className="font-bold text-[#08123D] leading-tight">
-                  {businessProfile.ownerName}
-                </div>
-                <div className="text-[10px] text-[#7E8AA8]">Business Owner</div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Workspace View Switcher (Added top padding for clear visual separation) */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-6 lg:pt-7 pb-12 max-w-[1720px] w-full mx-auto space-y-6">
-          {isLoading && <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">Loading financial data from this device…</div>}
-          {apiError && <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><span>{apiError}</span><button onClick={() => void refresh()} className="font-semibold underline">Retry</button></div>}
-          {activeTab === 'overview' && <OverviewPage />}
-          {activeTab === 'imports' && <ImportsPage />}
-          {activeTab === 'transactions' && <TransactionsPage />}
-          {activeTab === 'allocation' && <AllocationPage />}
-          {activeTab === 'cash-flow' && <CashFlowPage />}
-          {activeTab === 'net-worth' && <NetWorthPage />}
-          {activeTab === 'investments' && <InvestmentsPage />}
-          {activeTab === 'settings' && <SettingsPage />}
-        </main>
-      </div>
-
-      {/* Global Modals & Drawers */}
-      <GlobalSearchModal />
-      <NotificationDrawer />
-      <AiAssistantDrawer />
-    </div>
-  );
-};
-
-export default function App() {
-  return (
-    <FinanceProvider>
-      <MainLayout />
-    </FinanceProvider>
-  );
+function SettingsPage({boot,selectedMonth,reload,notify,reportError}:any){
+ const keys=['ownersPay','tax','savings','investments','education','travel','creditCardDebt'];
+ const balanceKeys=['savingsCents','investmentsCents','superCents','otherAssetsCents','creditCardCents','loansCents','otherLiabilitiesCents'];
+ const initialMonth=selectedMonth&&/^\d{4}-\d{2}$/.test(selectedMonth)?selectedMonth:australiaToday().slice(0,7);
+ const [allocationMonth,setAllocationMonth]=useState(initialMonth),[alloc,setAlloc]=useState({...boot.settings.allocation}),[snapshotMonth,setSnapshotMonth]=useState(initialMonth),[snap,setSnap]=useState<any>({month:initialMonth,...Object.fromEntries(balanceKeys.map(k=>[k,0])),note:''}),[working,setWorking]=useState('');
+ const total=keys.reduce((sum,key)=>sum+Number(alloc[key]||0),0);
+ const run=async(name:string,operation:()=>Promise<void>)=>{try{setWorking(name);reportError('');await operation()}catch(error:any){reportError(error.message||'That action could not be completed.')}finally{setWorking('')}};
+ useEffect(()=>{let live=true;window.finance.allocationFor(allocationMonth).then(value=>{if(live)setAlloc(value)}).catch((error:any)=>reportError(error.message));return()=>{live=false}},[allocationMonth,boot]);
+ useEffect(()=>{let live=true;window.finance.snapshotFor(snapshotMonth).then(value=>{if(live)setSnap({...value,...Object.fromEntries(balanceKeys.map(k=>[k,Number(value[k]||0)/100]))})}).catch((error:any)=>reportError(error.message));return()=>{live=false}},[snapshotMonth,boot]);
+ const saveAllocation=()=>run('allocation',async()=>{await window.finance.saveSettings({allocation:{...Object.fromEntries(keys.map(k=>[k,Number(alloc[k])])),effectiveMonth:allocationMonth},setupComplete:true});await reload();notify('Allocation settings saved.')});
+ const saveSnapshot=()=>run('snapshot',async()=>{await window.finance.saveSnapshot({month:snapshotMonth,...Object.fromEntries(balanceKeys.map(k=>[k,audToCents(snap[k]||0)])),note:snap.note||''});await reload();notify('Financial position updated.')});
+ return <section className="settings-page"><article className="settings-card"><div><span className="eyebrow">Money setup</span><h2>Profit allocation</h2><p>Changes begin from the effective month, so earlier months stay understandable.</p></div><label>Effective month<input type="month" value={allocationMonth} onChange={e=>setAllocationMonth(e.target.value)}/></label><div className="allocation-inputs">{keys.map(k=><label key={k}><span>{label(k)}</span><div><input type="number" min="0" max="100" step="1" value={alloc[k]} onChange={e=>setAlloc({...alloc,[k]:Number(e.target.value)})}/><b>%</b></div></label>)}</div><div className={`allocation-total ${total===100?'ok':'bad'}`}><span>Total</span><strong>{total}%</strong></div><button className="primary" disabled={total!==100||working==='allocation'} onClick={saveAllocation}>{working==='allocation'?'Saving…':'Save allocation'}</button></article><article className="settings-card" id="snapshot-settings"><div><span className="eyebrow">Financial position</span><h2>Update your balances</h2><p>A quick monthly snapshot—no detailed investment ledger required.</p></div><label>Snapshot month<input type="month" value={snapshotMonth} onChange={e=>setSnapshotMonth(e.target.value)}/></label><div className="snapshot-grid">{balanceKeys.map(k=><label key={k}>{label(k.replace('Cents',''))}<input type="number" min="0" placeholder="AUD" step="0.01" value={snap[k]} onChange={e=>setSnap({...snap,[k]:e.target.value})}/></label>)}</div><label>Snapshot note<textarea value={snap.note||''} onChange={e=>setSnap({...snap,note:e.target.value})}/></label><button className="primary" disabled={working==='snapshot'} onClick={saveSnapshot}>{working==='snapshot'?'Saving…':'Save snapshot'}</button></article><article className="settings-card"><div><span className="eyebrow">Local data</span><h2>Backup and restore</h2><p>Keep a copy somewhere separate from this Mac.</p></div><div className="data-actions"><button className="secondary" disabled={Boolean(working)} onClick={()=>run('backup',async()=>{if(await window.finance.backup())notify('Backup saved.')})}><Database/> {working==='backup'?'Saving…':'Save backup'}</button><button className="secondary" disabled={Boolean(working)} onClick={()=>{if(confirm('Restore will replace all current finance data. Continue?'))void run('restore',async()=>{if(await window.finance.restore()){await reload();notify('Backup restored.')}})}}><RotateCcw/> {working==='restore'?'Restoring…':'Restore backup'}</button></div><div className="history"><h3>Import history</h3>{boot.imports.length?boot.imports.map((item:any)=><div key={item.id}><span><b>{item.fileName}</b><small>{item.summary} · {item.transactionCount} records</small></span>{item.revertedAt?<em>Undone</em>:<button disabled={Boolean(working)} onClick={()=>{if(confirm(`Undo ${item.fileName}?`))void run('undo',async()=>{await window.finance.undoImport(item.id);await reload();notify('Import undone.')})}}>Undo import</button>}</div>):<p>No imports yet.</p>}</div></article></section>
 }
