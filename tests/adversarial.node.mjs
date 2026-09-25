@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {FinanceStore} from '../electron/store.mjs';
-import {AiManager,MODEL,RUNTIMES,runtimeKey} from '../electron/ai.mjs';
+import {AiManager} from '../electron/ai.mjs';
 
 const synthetic=path.resolve('test-fixtures/synthetic/2026-08');
 const stripe=path.join(synthetic,'Stripe_Itemised_Payouts_2026-08.csv');
@@ -59,4 +59,4 @@ test('insights are deterministic, month-scoped, transfer-safe, and all-time awar
 
 test('goals CRUD validates, computes progress, and survives backup restore',()=>withStore((store,dir)=>{assert.throws(()=>store.createGoal({title:'',targetCents:100,currentCents:0,deadline:'2027-01-01',category:'Savings'}));const goal=store.createGoal({title:'Emergency fund',targetCents:100000,currentCents:25000,deadline:'2027-12-31',category:'Savings'});assert.equal(goal.progressPercent,25);const updated=store.updateGoal({...goal,currentCents:100000});assert.equal(updated.status,'complete');const backup=path.join(dir,'goal-backup.sqlite');store.backup(backup);store.deleteGoal(goal.id);store.restore(backup);assert.equal(store.goals().length,1);store.deleteGoal(goal.id);assert.equal(store.goals().length,0)}));
 
-test('local AI setup is opt-in, architecture-aware, and fail-closed before download',()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'jerri-ai-'));try{const manager=new AiManager(dir),state=manager.state();assert.equal(state.modelReady,false);assert.equal(state.ready,false);assert.equal(state.model.id,'qwen2.5-3b-q4_k_m');assert.equal(state.model.license,'qwen-research');assert.ok(state.model.sha256.length===64);assert.ok(RUNTIMES[runtimeKey()]||!state.runtime);assert.equal(fs.existsSync(path.join(dir,'ai')),false)}finally{fs.rmSync(dir,{recursive:true,force:true})}});
+test('Ask Jerri is provider-powered, defaults to Codex, and never provisions a local model runtime',()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'jerri-ai-'));try{const manager=new AiManager(dir,{credentials:{get:()=>null,set:()=>{},delete:()=>{}}}),state=manager.state();assert.equal(state.providerId,'codex');assert.equal(state.ready,false);assert.deepEqual(state.providers.map(provider=>provider.id),['codex','anthropic']);assert.ok(state.models.every(model=>!('downloadUrl' in model)&&!('sha256' in model)));assert.equal(fs.existsSync(path.join(dir,'ai')),false)}finally{fs.rmSync(dir,{recursive:true,force:true})}});

@@ -1,7 +1,7 @@
 {
   "name": "jerri-finance-portal",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A private, simple finance dashboard for Jerri",
   "author": "Bui Minh Cuong",
   "type": "module",
@@ -23,10 +23,13 @@
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/newsreader": "^5.2.8",
+    "@openai/codex": "0.146.0",
     "lucide-react": "^0.468.0",
     "pdfjs-dist": "^5.4.624",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -60,6 +63,9 @@
       "onlyLoadAppFromAsar": true,
       "grantFileProtocolExtraPrivileges": true
     },
+    "asarUnpack": [
+      "node_modules/@openai/codex-win32-x64/vendor/**/*"
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*",
